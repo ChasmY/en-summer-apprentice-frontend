@@ -1,0 +1,876 @@
+class SubmitClaim extends Claim {
+    constructor(data, language, claim, config) {
+        super(data, language, claim, config);
+    }
+
+    async form() {
+        try {
+            const response = await fetch(this.data);
+            const json = await response.json();
+            const form = json.claim_form[userLanguage];
+            this.init_claim(form);
+        }
+        catch (error) {
+            console.log(error);
+            modal(i18n[userLanguage].error, `Error: ${error}`);
+            loadingGif(loading, "hide", 250);
+        }
+    }
+
+    init_claim(form) {
+        this.claim.api.claimsDeadlineGet({ domain: this.claim.data.domain }).then((result) => {
+
+            // Claim Deadline - Default Pacific DateTime
+            let datetime;
+            if (Boolean(result.data.pacific_datetime)) {
+                datetime = result.data.pacific_datetime;
+            }
+            else {
+                datetime = `<pre>Error: datetime</pre>`;
+            }
+
+            // Error Handling
+            if (result.data.error) {
+                this.result_data_error(result, userLanguage);
+                return;
+            }
+
+            const container = createElement("div", {
+                class: "display-form",
+            });
+
+            /** 
+             * Claim Guard
+             */
+            if (form.form_options.notice_confirmation.display === true) {
+
+                // Guard
+                container.appendChild(this.guard(form, datetime));
+                outputDiv.appendChild(container);
+
+                const zero_zero_id = document.getElementById('zero_zero_id');
+                const confirmation_code = document.getElementById('confirmation_code');
+                const skip_guard = document.getElementById("skip-guard");
+
+                // Notice Id and Confirmation Code
+                [zero_zero_id, confirmation_code].forEach(function (input) {
+                    input.addEventListener('change', validateField);
+                });
+
+                // Skip Guard
+                skip_guard.addEventListener("click", () => {
+                    // Hide guard
+                    document.getElementById('guard').classList.add("d-none");
+                    // New Claim Form
+                    container.appendChild(this.claim_form(form));
+                    container.scrollIntoView({ behavior: "smooth" });
+                    outputDiv.appendChild(container);
+                });
+
+                // Validate Guard Fields
+                document.getElementById("guard").addEventListener("submit", (e) => {
+
+                    e.preventDefault();
+
+                    var valid = true;
+                    var member = {
+                        domain: this.claim.data.domain,
+                        zero_zero_id: zero_zero_id.value.toUpperCase(),
+                        confirmation_code: confirmation_code.value,
+                    };
+
+                    clearMessage();
+
+                    // Validate guard fields
+                    [zero_zero_id, confirmation_code].forEach(function (input) {
+                        valid = validateField(input) && valid;
+                    });
+                    if (!valid) return;
+
+                    loadingGif(loading, "show");
+
+                    // Retrieve class member data (use POST to pass notice id and confirmation code privately)
+                    this.claim.api.classMemberPost({}, member).then((result) => {
+
+                        // Check for error message
+                        if (result.data.error) {
+                            toggleFieldError(zero_zero_id, true, '');
+                            toggleFieldError(confirmation_code, true, '');
+                            modal(i18n[userLanguage].error, `<p class="fw-bold">${result.data.error}</p>`);
+                            return;
+                        }
+
+                        // Add notice id and confirmation code to claim data
+                        this.claim.data.zero_zero_id = member.zero_zero_id;
+                        this.claim.data.confirmation_code = member.confirmation_code;
+
+                        // Check for existing claim number and add to claim data
+                        if (result.data.claim_id) {
+                            this.claim.data.claim_id = result.data.claim_id;
+                        }
+
+                        // Hide guard
+                        document.getElementById('guard').classList.add("d-none");
+                        // New Claim Form
+                        container.appendChild(this.claim_form(form));
+                        container.scrollIntoView({ behavior: "smooth" })
+                        outputDiv.appendChild(container);
+
+                        // Load member data into form
+                        loadMember(result.data);
+
+                        if ( typeof customLoadMember === 'function') {
+                            customLoadMember(claim);
+                        }
+
+                        loadingGif(loading, "hide", 250);
+
+                    }).catch(function (error) {
+                        console.log(error);
+                        loadingGif(loading, "hide", 250);
+                        modal(i18n[userLanguage].error, i18n[userLanguage].claim_processing_error);
+                    });
+                });
+            }
+            /**
+             * No Claim Guard
+             */
+            else {
+                this.edit_claim(form);
+                // New Claim Form
+                container.appendChild(this.claim_form(form));
+                outputDiv.appendChild(container);
+
+            }
+
+            this.claim.inputs.contact = Array.from(document.querySelectorAll('#full_name, #first_name, #middle_initial, #last_name, #title, #business_name, #street_address_1, #street_address_2, #country, #city, #state, #zip_code, #province, #postal_code, #email_address, #confirm_email_address, #phone_number_1, #phone_number_2, #signature, #date, #ssn, #referer_url'))
+            this.claim.inputs.fields = Array.from(document.querySelectorAll("#claim-fields input, #claim-fields textarea, #claim-fields select"));
+            this.claim.inputs.transactions = Array.from(document.querySelectorAll("#transactions input, #transactions textarea, #transactions select"));
+
+            // Loop thru available inputs
+            for (var type in this.claim.inputs) {
+                if (this.claim.inputs[type] && this.claim.inputs[type].length > 0) {
+                    this.claim.inputs[type].forEach(function (field) {
+
+                        // Check for validation attribute
+                        if (field.hasAttribute('data-validate')) {
+                            // Attach change event handler for validation
+                            field.addEventListener('change', function (e) {
+                                validateField(field);
+                            });
+                        }
+                    });
+                }
+            }
+
+            $('[data-validate~="phone"]').on('keyup', formatPhone);
+
+            $('#country').change(function () {
+                let usa_selected = this.value === 'USA';
+                $('#state,#zip_code').each(function (index, input) {
+                    input.value = (usa_selected) ? input.value : '';
+                    toggleFieldAttribute(input, 'required', usa_selected);
+                    $(input).parent().toggleClass('d-none', !usa_selected);
+                });
+                $('#province,#postal_code').each(function (index, input) {
+                    input.value = (!usa_selected) ? input.value : '';
+                    toggleFieldAttribute(input, 'required', !usa_selected);
+                    $(input).parent().toggleClass('d-none', usa_selected);
+                });
+                toggleForeignPhone(!usa_selected);
+            });
+
+            if (document.getElementById('email_address') && document.getElementById('confirm_email_address')) {
+                ConfirmEmailAddress('init');
+            }
+
+            const validate = new Validate();
+            validate.listeners();
+
+            if (Boolean(document.getElementById("form"))) {
+                document.getElementById("form").addEventListener('submit', (process) => {
+                    this.process_claim(process, this.claim);
+                });
+            }
+
+            loadingGif(loading, "hide", 250);
+
+        }).catch(function (error) {
+            outputDiv.innerHTML = ``;
+            console.log(error);
+            const div = createElement("div", {
+                class: "py-3"
+            }, [], `<h3>${i18n[userLanguage].error}</h3><p>${i18n[userLanguage].claim_processing_error}</p>`);
+            outputDiv.appendChild(div);
+            loadingGif(loading, "hide", 250);
+        });
+    }
+
+    process_claim(e, claim) {
+        e.preventDefault();
+        // var claim = this.claim;
+        if (claim.flags.sent) {
+            return;
+        }
+
+        clearMessage();
+
+        claim.flags.valid = true;
+        claim.data.fields = {};
+
+        this.claim.inputs.contact = Array.from(document.querySelectorAll('#full_name, #first_name, #middle_initial, #last_name, #title, #business_name, #street_address_1, #street_address_2, #country, #city, #state, #zip_code, #province, #postal_code, #email_address, #confirm_email_address, #phone_number_1, #phone_number_2, #signature, #date, #ssn, #referer_url'))
+        this.claim.inputs.fields = Array.from(document.querySelectorAll("#claim-fields input, #claim-fields textarea, #claim-fields select, #ag_UUID, #user_language"));
+        this.claim.inputs.transactions = Array.from(document.querySelectorAll("#transactions input, #transactions textarea, #transactions select"));
+
+        for (var type in claim.inputs) {
+
+            if (claim.inputs[type] && claim.inputs[type].length > 0) {
+                claim.inputs[type].forEach(function (field) {
+                    var label = field.getAttribute('data-label') || field.name;
+                    var item_id = field.getAttribute('item-id') || null;
+
+                    if (field.hasAttribute('data-validate') && !validateField(field)) {
+                        claim.flags.valid = false;
+                    } else if (field.type == 'radio') {
+                        if (field.checked) {
+                            if (item_id) {
+                                if (!claim.data[type][item_id]) {
+                                    claim.data[type][item_id] = {};
+                                }
+                                claim.data[type][item_id][label] = field.value;
+                            } else {
+                                claim.data[type][label] = field.value;
+                            }
+                        }
+                    } else if (field.type == 'checkbox') {
+                        if (field.checked) {
+                            if (item_id) {
+                                if (!claim.data[type][item_id]) {
+                                    claim.data[type][item_id] = {};
+                                }
+                                claim.data[type][item_id][label] = field.value;
+                            } else {
+                                claim.data[type][label] = field.value;
+                            }
+                        } else {
+                            if (item_id) {
+                                if (!claim.data[type][item_id]) {
+                                    claim.data[type][item_id] = {};
+                                }
+                                claim.data[type][item_id][label] = 'No';
+                            } else {
+                                claim.data[type][label] = 'No';
+                            }
+                        }
+                    } else {//} if (field.value) {
+                        if (item_id) {
+                            if (!claim.data[type][item_id]) {
+                                claim.data[type][item_id] = {};
+                            }
+                            claim.data[type][item_id][label] = field.value;
+                        } else {
+                            claim.data[type][label] = field.value;
+                        }
+                    }
+                });
+            }
+        }
+
+        claim.data.contact.date = localDatetime();
+
+        if (document.getElementById('email_address') && document.getElementById('confirm_email_address')) {
+            ConfirmEmailAddress('process', claim);
+        }
+
+        if (typeof customProcessClaim === 'function') {
+            claim = customProcessClaim(claim) || claim;
+        }
+
+        if (claim.flags.valid) {
+            grecaptcha.enterprise.execute(reCAPTCHAv3, { action: 'submit' }).then((token) => {
+                claim.data.token = token;
+                this.post_claim(claim);
+            });
+        } else {
+            modal(i18n[userLanguage].error, i18n[userLanguage].claim_form_errors);
+            var error = document.querySelector('input.warning, input.error, select.error, textarea.error, #file-notice.error, #no-files.error');
+            if (error && typeof error.scrollIntoView == 'function') {
+                error.scrollIntoView({ behavior: "smooth" });
+            }
+        }
+    }
+
+    post_claim(claim) {
+
+        claim.flags.sent = true;
+        document.getElementById('submit-claim').disabled = true;
+
+        // Wait 0.5 seconds before display loading gif (Lambda in sleep mode)
+        var t = window.setTimeout(() => {
+            loadingGif(loading, "show");
+        }, 250);
+
+        // Update claim if an existing claim id
+        if (claim.data.claim_id) {
+            claim.flags.method = 'claimsPut';
+        }
+
+        // Post/Put claims data
+        claim.api[claim.flags.method]({}, claim.data).then(async function (result) {
+
+            // Lambda error message
+            if (result.data.error) {
+                clearTimeout(t);
+                claim.flags.success = false;
+                modal(i18n[userLanguage].error, result.data.error);
+                this.destroy_claim(claim);
+                return;
+            }
+
+            // Save correlation id
+            if (result.data.correlation_id) {
+                claim.data.correlation_id = result.data.correlation_id;
+            }
+            claim.flags.success = true;
+
+            // if (claim.uploads.length && claim.uploads.length > 0) {
+            //     for (var f = 0; f < claim.uploads.length; f++) {
+            //         await uploadFile(claim.uploads[f], f, 0);
+            //     }
+            // } else {
+            //     claim.flags.success = true;
+            // }
+
+        }).catch((error) => {
+            console.log(error)
+            claim.flags.success = false;
+        }).finally(() => {
+            clearTimeout(t);
+            loadingGif(loading, "hide", 250);
+            this.destroy_claim(claim);
+
+            // Remove editClaim link on Claim Confirmation
+            const editClaim = document.getElementById("editClaim");
+            if (editClaim !== null) {
+                editClaim.remove();
+            }
+        });
+    }
+
+    edit_claim(params) {
+
+        const notice = createElement("p", [], [], i18n[userLanguage].claim_edit_notice);
+        const div = createElement("div", { class: "my-3 text-center fw-bold text-info-emphasis text-uppercase", id: "editClaim" }, [
+            notice
+        ]);
+
+        const guardRow = createElement("div", { class: "row fs-5", id: "guardRow", }, [this.notice_confirmation(params, "col")]);
+        const form = createElement("form", { class: "needs-validation", id: "guard", method: "post" }, [guardRow]);
+        const formContainer = createElement("div", [], [form]);
+
+        outputDiv.appendChild(div);
+
+        document.getElementById("editClaimBtn").addEventListener("click", () => {
+
+            modal(i18n[userLanguage].claim_edit_title, formContainer.innerHTML);
+
+            // Allows for DOM to load
+            setTimeout(() => {
+
+                const zero_zero_id = document.getElementById('zero_zero_id');
+                const confirmation_code = document.getElementById('confirmation_code');
+
+                // Notice Id and Confirmation Code
+                [zero_zero_id, confirmation_code].forEach(function (input) {
+                    input.addEventListener('change', validateField);
+                });
+
+                // Validate Guard Fields
+                document.getElementById("guard").addEventListener("submit", (e) => {
+
+                    div.remove(); // remove the editClaim div upon click
+
+                    e.preventDefault();
+
+                    var valid = true;
+                    var member = {
+                        domain: this.claim.data.domain,
+                        zero_zero_id: zero_zero_id.value.toUpperCase(),
+                        confirmation_code: confirmation_code.value,
+                    };
+
+                    clearMessage();
+
+                    // Validate guard fields
+                    [zero_zero_id, confirmation_code].forEach(function (input) {
+                        valid = validateField(input) && valid;
+                    });
+                    if (!valid) return;
+
+                    loadingGif(loading, "show");
+
+                    // Retrieve class member data (use POST to pass notice id and confirmation code privately)
+                    this.claim.api.classMemberPost({}, member).then((result) => {
+
+                        // Check for error message
+                        if (result.data.error) {
+                            toggleFieldError(zero_zero_id, true, '');
+                            toggleFieldError(confirmation_code, true, '');
+                            modal(i18n[userLanguage].error, `<p class="fw-bold">${result.data.error}</p>`);
+                            return;
+                        }
+
+                        // Add notice id and confirmation code to claim data
+                        this.claim.data.correlation_id = result.data.correlation_id;
+                        this.claim.data.zero_zero_id = member.zero_zero_id;
+                        this.claim.data.confirmation_code = member.confirmation_code;
+
+                        // Check for existing claim number and add to claim data
+                        if (result.data.claim_id) {
+                            this.claim.data.claim_id = result.data.claim_id;
+                        }
+
+                        // Hide guard
+                        document.querySelector('[data-bs-dismiss="modal"]').click();
+
+                        // Load member data into form
+                        loadMember(result.data);
+
+                        // Payment widget
+                        if (result.data.claim_id) {
+                            if (document.getElementById('payment_method').value) {
+                                document.getElementById('dst-payment').classList.add('d-none');
+                                document.getElementById('previous_payment_method').innerText = document.getElementById('payment_method').value;
+                                document.getElementById('update_payment_toggle').addEventListener('click', function () {
+                                    document.getElementById('update_payment_message').classList.add('d-none');
+                                    document.getElementById('dst-payment').classList.remove('d-none');
+                                });
+                                document.getElementById('update_payment_message').classList.remove('d-none');
+                            }
+                        }
+
+                        loadingGif(loading, "hide", 250);
+
+                    }).catch(function (error) {
+                        console.log(error);
+                        loadingGif(loading, "hide", 250);
+                        modal(i18n[userLanguage].error, i18n[userLanguage].claim_processing_error);
+                    });
+                });
+
+            }, 1000);
+        });
+
+    }
+
+    edit_claim(params) {
+
+        const notice = createElement("p", [], [], i18n[userLanguage].claim_edit_notice);
+        const div = createElement("div", { class: "my-3 text-center fw-bold text-info-emphasis text-uppercase", id: "editClaim" }, [
+            notice
+        ]);
+
+        const guardRow = createElement("div", { class: "row fs-5", id: "guardRow", }, [this.notice_confirmation(params, "col")]);
+        const form = createElement("form", { class: "needs-validation", id: "guard", method: "post" }, [guardRow]);
+        const formContainer = createElement("div", [], [form]);
+
+        outputDiv.appendChild(div);
+
+        document.getElementById("editClaimBtn").addEventListener("click", () => {
+
+            modal(i18n[userLanguage].claim_edit_title, formContainer.innerHTML);
+
+            // Allows for DOM to load
+            setTimeout(() => {
+
+                const zero_zero_id = document.getElementById('zero_zero_id');
+                const confirmation_code = document.getElementById('confirmation_code');
+
+                // Notice Id and Confirmation Code
+                [zero_zero_id, confirmation_code].forEach(function (input) {
+                    input.addEventListener('change', validateField);
+                });
+
+                // Validate Guard Fields
+                document.getElementById("guard").addEventListener("submit", (e) => {
+
+                    div.remove(); // remove the editClaim div upon click
+
+                    // Edit claim instructions.
+                    const instructions = createElement("div", { class: "my-3 text-center fw-bold text-info-emphasis text-uppercase", id: "editClaim" }, [], i18n[userLanguage].claim_edit_instructions);
+                    outputDiv.insertAdjacentElement("afterbegin", instructions);
+
+                    e.preventDefault();
+
+                    var valid = true;
+                    var member = {
+                        domain: this.claim.data.domain,
+                        zero_zero_id: zero_zero_id.value.toUpperCase(),
+                        confirmation_code: confirmation_code.value,
+                    };
+
+                    clearMessage();
+
+                    // Validate guard fields
+                    [zero_zero_id, confirmation_code].forEach(function (input) {
+                        valid = validateField(input) && valid;
+                    });
+                    if (!valid) return;
+
+                    loadingGif(loading, "show");
+
+                    // Retrieve class member data (use POST to pass notice id and confirmation code privately)
+                    this.claim.api.classMemberPost({}, member).then((result) => {
+
+                        // Check for error message
+                        if (result.data.error) {
+                            toggleFieldError(zero_zero_id, true, '');
+                            toggleFieldError(confirmation_code, true, '');
+                            modal(i18n[userLanguage].error, `<p class="fw-bold">${result.data.error}</p>`);
+                            return;
+                        }
+
+                        // Add notice id and confirmation code to claim data
+                        this.claim.data.correlation_id = result.data.correlation_id;
+                        this.claim.data.zero_zero_id = member.zero_zero_id;
+                        this.claim.data.confirmation_code = member.confirmation_code;
+
+                        // Check for existing claim number and add to claim data
+                        if (result.data.claim_id) {
+                            this.claim.data.claim_id = result.data.claim_id;
+                        }
+
+                        // Hide guard
+                        document.querySelector('[data-bs-dismiss="modal"]').click();
+
+                        // Load member data into form
+                        loadMember(result.data);
+
+                        // Payment widget
+                        if (result.data.claim_id) {
+                            if (document.getElementById('payment_method').value) {
+                                document.getElementById('dst-payment').classList.add('d-none');
+                                document.getElementById('previous_payment_method').innerText = document.getElementById('payment_method').value;
+                                document.getElementById('update_payment_toggle').addEventListener('click', function () {
+                                    document.getElementById('update_payment_message').classList.add('d-none');
+                                    document.getElementById('dst-payment').classList.remove('d-none');
+                                });
+                                document.getElementById('update_payment_message').classList.remove('d-none');
+                            }
+                        }
+
+                        loadingGif(loading, "hide", 250);
+
+                    }).catch(function (error) {
+                        console.log(error);
+                        loadingGif(loading, "hide", 250);
+                        modal(i18n[userLanguage].error, i18n[userLanguage].claim_processing_error);
+                    });
+                });
+
+            }, 1000);
+        });
+
+    }
+
+    destroy_claim(claim) {
+        loadingGif(loading, "hide", 500); // left here
+
+        if (claim.flags.success) {
+            if (typeof customConfirmation === 'function') {
+                claim.data.confirmation = customConfirmation(claim.data);
+                $('div.display-form').addClass('d-none');
+                outputDiv.appendChild(this.claim_confirmation(claim.data));
+                outputDiv.scrollIntoView({ behavior: "smooth" });
+
+                setTimeout(() => {
+                    modal(i18n[userLanguage].confirmation_screen_additional.title, i18n[userLanguage].confirmation_screen_additional.body);
+                }, 250);
+
+            } else {
+                modal(i18n[userLanguage].confirmation, i18n[userLanguage].claim_submit_success);
+            }
+
+            if (claim.flags.method == 'claimsPut') {
+                this.claim_confirmation_email(claim.data);
+            }
+        } else {
+            modal(i18n[userLanguage].error, i18n[userLanguage].claim_submit_error);
+        }
+
+        // Loop thru each input and disable to prevent changes and resubmissions
+        for (var type in claim.inputs) {
+            if (claim.inputs[type] && claim.inputs[type].length > 0) {
+                claim.inputs[type].forEach(function (field) {
+                    field.disabled = true;
+                });
+            }
+        }
+
+        [].forEach.call(document.querySelectorAll('input[type="radio"]'), function (radio) {
+            radio.setAttribute('disabled', 'disabled');
+        });
+
+        document.getElementById('submit-claim').setAttribute('disabled', 'disabled');
+    }
+}
+
+class OptOut extends Claim {
+    constructor(data, language, claim, config, exclusion) {
+        super(data, language, claim, config, exclusion);
+    }
+
+    async form() {
+        try {
+            const response = await fetch(this.data);
+            const json = await response.json();
+            const form = json.claim_form[this.lang];
+            this.init_exclusion(form);
+        }
+        catch (error) {
+            console.log(error);
+            modal(i18n[userLanguage].error, `Error: ${error}`);
+            loadingGif(loading, "hide", 250);
+        }
+    }
+
+    init_exclusion(form) {
+        this.exclusion.api.exclusionDeadlineGet({ domain: this.exclusion.data.domain }).then((result) => {
+
+            // Claim Deadline - Default Pacific DateTime
+            let datetime;
+            if (Boolean(result.data.pacific_datetime)) {
+                datetime = result.data.pacific_datetime;
+            }
+            else {
+                datetime = `<pre>Error: datetime</pre>`;
+            }
+
+            // Error Handling
+            if (result.data.error) {
+                this.result_data_error(result, userLanguage);
+                return;
+            }
+
+            const container = createElement("div", {
+                class: "display-form",
+            });
+
+
+            // New Exclusion Form
+            container.appendChild(this.exclusion_form(form));
+            outputDiv.appendChild(container);
+
+            this.exclusion.inputs = Array.from(document.querySelectorAll('#full_name, #first_name, #middle_initial, #last_name, #title, #business_name, #street_address_1, #street_address_2, #country, #city, #state, #zip_code, #province, #postal_code, #email_address, #confirm_email_address, #phone_number_1, #phone_number_2, #signature, #date, #ssn, #referer_url'));
+            this.exclusion.inputs.transactions = Array.from(document.querySelectorAll("#transactions input, #transactions textarea, #transactions select"));
+
+            this.exclusion.inputs.forEach(function (field) {
+                // Check for validation attribute
+                if (field.hasAttribute('data-validate')) {
+                    // Attach change event handler for validation
+                    field.addEventListener('change', function (e) {
+                        validateField(field);
+                    });
+                }
+            })
+
+            if (this.exclusion.inputs.transactions && this.exclusion.inputs.transactions.length > 0) {
+                this.exclusion.inputs.transactions.forEach(function (field) {
+                    // Check for validation attribute
+                    if (field.hasAttribute('data-validate')) {
+                        // Attach change event handler for validation
+                        field.addEventListener('change', function (e) {
+                            validateField(field);
+                        });
+                    }
+                });
+            }
+
+            $('[data-validate~="phone"]').on('keyup', formatPhone);
+
+            $('#country').change(function () {
+                let usa_selected = this.value === 'USA';
+                $('#state,#zip_code').each(function (index, input) {
+                    input.value = (usa_selected) ? input.value : '';
+                    toggleFieldAttribute(input, 'required', usa_selected);
+                    $(input).parent().toggleClass('d-none', !usa_selected);
+                });
+                $('#province,#postal_code').each(function (index, input) {
+                    input.value = (!usa_selected) ? input.value : '';
+                    toggleFieldAttribute(input, 'required', !usa_selected);
+                    $(input).parent().toggleClass('d-none', usa_selected);
+                });
+                toggleForeignPhone(!usa_selected);
+            });
+
+            if (document.getElementById('email_address') && document.getElementById('confirm_email_address')) {
+                ConfirmEmailAddress('init');
+            }
+
+            document.getElementById("form").addEventListener('submit', (process) => {
+                this.process_exclusion(process, this.exclusion);
+            });
+
+            loadingGif(loading, "hide", 250);
+
+        }).catch(function (error) {
+            outputDiv.innerHTML = ``;
+            console.log(error);
+            const div = createElement("div", {
+                class: "py-3"
+            }, [], `<h3>${i18n[userLanguage].error}</h3><p>${i18n[userLanguage].claim_processing_error}</p><pre>init_claim()</pre>`);
+            outputDiv.appendChild(div);
+            loadingGif(loading, "hide", 250);
+        });
+    }
+
+    process_exclusion(e, exclusion) {
+        e.preventDefault();
+        // var exclusion = this.exclusion;
+        if (exclusion.sent) {
+            return;
+        }
+
+        clearMessage();
+
+        exclusion.valid = true;
+
+        this.exclusion.inputs = Array.from(document.querySelectorAll('#full_name, #first_name, #middle_initial, #last_name, #title, #business_name, #street_address_1, #street_address_2, #country, #city, #state, #zip_code, #province, #postal_code, #email_address, #confirm_email_address, #phone_number_1, #phone_number_2, #signature, #date, #ssn, #referer_url'));
+        this.exclusion.inputs.transactions = Array.from(document.querySelectorAll("#transactions input, #transactions textarea, #transactions select"));
+        exclusion.data.contact = {};
+        exclusion.data.fields = {};
+
+        exclusion.inputs.forEach(function (field) {
+            if (field.hasAttribute('data-validate') && !validateField(field)) {
+                exclusion.valid = false;
+            } else if (field.type == 'radio') {
+                if (field.checked) {
+                    exclusion.data[field.name] = field.value;
+                    exclusion.data.contact[field.name] = field.value;
+                }
+            } else if (field.type == 'checkbox') {
+                if (field.checked) {
+                    exclusion.data[field.name] = field.value;
+                    exclusion.data.contact[field.name] = field.value;
+                } else {
+                    exclusion.data[field.name] = 'No';
+                    exclusion.data.contact[field.name] = 'No';
+                }
+            } else {//} if (field.value) {
+                exclusion.data[field.name] = field.value;
+                exclusion.data.contact[field.name] = field.value;
+            }
+        });
+
+        if (exclusion.inputs.transactions && exclusion.inputs.transactions.length > 0) {
+            exclusion.inputs.transactions.forEach(function (field) {
+                var label = field.getAttribute('data-label') || field.name;
+                var item_id = field.getAttribute('item-id') || null;
+
+                if (field.hasAttribute('data-validate') && !validateField(field)) {
+                    exclusion.flags.valid = false;
+                } else if (field.type == 'radio') {
+                    if (field.checked) {
+                        if (item_id) {
+                            if (!exclusion.data.transactions[item_id]) {
+                                exclusion.data.transactions[item_id] = {};
+                            }
+                            exclusion.data.transactions[item_id][label] = field.value;
+                        } else {
+                            exclusion.data.transactions[label] = field.value;
+                        }
+                    }
+                } else if (field.type == 'checkbox') {
+                    if (field.checked) {
+                        if (item_id) {
+                            if (!exclusion.data.transactions[item_id]) {
+                                exclusion.data.transactions[item_id] = {};
+                            }
+                            exclusion.data.transactions[item_id][label] = field.value;
+                        } else {
+                            exclusion.data.transactions[label] = field.value;
+                        }
+                    } else {
+                        if (item_id) {
+                            if (!exclusion.data.transactions[item_id]) {
+                                exclusion.data.transactions[item_id] = {};
+                            }
+                            exclusion.data.transactions[item_id][label] = 'No';
+                        } else {
+                            exclusion.data.transactions[label] = 'No';
+                        }
+                    }
+                } else {//} if (field.value) {
+                    if (item_id) {
+                        if (!exclusion.data.transactions[item_id]) {
+                            exclusion.data.transactions[item_id] = {};
+                        }
+                        exclusion.data.transactions[item_id][label] = field.value;
+                    } else {
+                        exclusion.data.transactions[label] = field.value;
+                    }
+                }
+            });
+        }
+
+        if (typeof customProcessExclusion === 'function') {
+            exclusion = customProcessExclusion(exclusion) || exclusion;
+        }
+
+        if (!exclusion.valid) {
+            modal(i18n[userLanguage].error, i18n[userLanguage].exclusion_form_error);
+            return;
+        }
+
+        exclusion.sent = true;
+        document.getElementById('submit-claim').disabled = true;
+
+        loadingGif(loading, "show");
+
+        exclusion.api.exclusionPost({}, exclusion.data).then((result) => {
+
+            if (result.data.error) {
+                loadingGif(loading, "hide", 250);
+                exclusion.success = false;
+                modal(i18n[userLanguage].error, result.data.error);
+                exclusion.inputs.forEach((field) => {
+                    field.disabled = true;
+                });
+                return;
+            }
+            exclusion.success = true;
+
+        }).catch((error) => {
+            console.log(error)
+            exclusion.success = false;
+
+        }).finally(() => {
+            loadingGif(loading, "hide", 250);
+
+            if (exclusion.success) {
+                if (typeof customExclusionConfirmation === 'function') {
+                    exclusion.data.confirmation = customExclusionConfirmation(exclusion.data);
+                    $('div.display-form').addClass('d-none');
+                    outputDiv.appendChild(this.exclusion_confirmation(exclusion.data));
+                    outputDiv.scrollIntoView({ behavior: "smooth" });
+                } else {
+                    modal(i18n[userLanguage].confirmation, i18n[userLanguage].exclusion_submit_success);
+                }
+            } else {
+                modal(i18n[userLanguage].error, i18n[userLanguage].exclusion_submit_error);
+            }
+
+            // Loop thru each input and disable to prevent changes and resubmissions
+            exclusion.inputs.forEach((field) => {
+                field.disabled = true;
+            });
+
+            [].forEach.call(document.querySelectorAll('input[type="radio"]'), function (radio) {
+                radio.setAttribute('disabled', 'disabled');
+            });
+
+            document.getElementById('submit-claim').setAttribute('disabled', 'disabled');
+        });
+    }
+}
+

@@ -4,10 +4,10 @@ import viteLogo from '/vite.svg'
 import { setupCounter } from './counter.js'
 
 
-function renderEventTemplate(){
+async function renderEventTemplate(){
   const mainContentDiv = document.querySelector('.main-content-component');
   mainContentDiv.innerHTML = getEventsTemplate();
-  displayCards();
+  await displayCards();
 }
 
 function getEventsTemplate(){
@@ -38,7 +38,16 @@ async function getAllEvents() {
 }
 
 
-
+const addEvents = (events) =>{
+  const eventsDiv = document.querySelector('.events');
+  eventsDiv.innerHTML="No events";
+  if(events.length){
+    eventsDiv.innerHTML="";
+    events.forEach((event) => {
+      eventsDiv.appendChild(createEventElement(event))
+    })
+  }
+}
 function displayCards(){
   const container = document.querySelector('.card-container');
   
@@ -96,12 +105,12 @@ function createEventElement(element){
             <li>${element.startDate}</li>
             <li>${element.endDate}</li>
             <select>
-              <option name="description">${tickets}</option>
+              <option name="description-input">${tickets}</option>
             </select>
-            <input type = "number" name="number">
-            <label for="name">Name</label>
+            <input type = "number" name="number" class = "number-input">
             <input type ="text" id="name" class="name-input>
-            <button class="add-to-cart">AddToCart</button>
+            <label for="name">Name</label>
+            <button id="add-to-cart">AddToCart</button>
           </ul>
       </div>
     </div>
@@ -110,20 +119,21 @@ function createEventElement(element){
 }
   console.log("Create new card", newCard);
 
-  const addToCartButton = newCard.querySelector(".add-to-cart");
-  addToCartButton.addEventListener("click", () => handleAddToCartClick(customerName, numberOfTickets, ticketType));
+  const addToCartButton = document.getElementById("add-to-cart");
+  console.log(addToCartButton)
+  addToCartButton.addEventListener("click", () => { handleAddToCart()});
 
   return newCard;
 }
 
-function handleAddToCartClick(inputCustomerName, inputNumberOfTickets, inputTicketType){
+const handleAddToCart = () =>{
   console.log("Loading...")
 
-  var customerName = document.querySelector("name-input")
-  var numberOfTickets = document.querySelector("number")
-  var ticketType = document.querySelector("description")
+  var customerName = document.querySelector('.name-input').value
+  var numberOfTickets = document.querySelector('.number-input').value
+  var ticketType = document.querySelector('.description-input').value
   console.log("Post beginning" , numberOfTickets, ticketType)
-
+  if(numberOfTickets)
   fetch('http://localhost:7042/api/Order/OrderPost', {
 
     method:Post,
@@ -133,8 +143,8 @@ function handleAddToCartClick(inputCustomerName, inputNumberOfTickets, inputTick
     },
     body: JSON.stringify({
 
-      ticketType: + ticketType,
-      customerName: +customerName,
+      ticketType: ticketType,
+      customerName: customerName,
       numberOfTickets: +numberOfTickets
     }),
   })
@@ -147,10 +157,19 @@ function handleAddToCartClick(inputCustomerName, inputNumberOfTickets, inputTick
     });
   })
   .then((data) =>{
-    addOrder(data); //trebuie implementata
+    addOrder(data);
+    console.log("Done")
+    // input.value=0
+    // addToCartButton.disabled=true; //trebuie implementata
     //resetam valorile
   })
   .finally(() =>{});
+}
+
+export const addOrder = (data) =>{
+  const purchasedTicket = JSON.parse(localStorage.getItem('purchasedTicket')) || [];
+  purchasedTicket.push(data);
+  localStorage.setItem('purchasedTicket', JSON.stringify(purchasedTicket));
 }
 
 renderEventTemplate();

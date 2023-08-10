@@ -124,7 +124,7 @@ img{
   padding-top: 10px;
   margin: 0;
 }
-header{
+header, footer{
   background-color: #1a1a1a;
   
 }
