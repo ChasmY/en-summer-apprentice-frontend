@@ -34,7 +34,6 @@ function getOrderTemplate(){
 async function getAllOrders(){
     const response = await fetch('http://localhost:7042/api/Order/GetAllOrders', {mode: 'cors'});
     const data = await response.json();
-    console.log("From api: " ,data)
     return data;
   }
 
@@ -47,8 +46,6 @@ async function getAllOrders(){
         const tempOrder = createOrderElement(element)
         container.appendChild(tempOrder);
         }));
-    console.log(orders);
-
 }
 
 function createOrderElement(element){
