@@ -9,6 +9,10 @@
     "preview": "vite preview"
   },
   "devDependencies": {
+    "tailwindcss": "^3.3.3",
     "vite": "^4.4.5"
+  },
+  "dependencies": {
+    "@fortawesome/fontawesome-svg-core": "^6.4.2"
   }
 }
