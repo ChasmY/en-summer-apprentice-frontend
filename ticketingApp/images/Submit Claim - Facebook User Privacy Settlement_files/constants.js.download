@@ -1,0 +1,74 @@
+/**
+ * Web App Constants
+ */
+const appConfigKey = "AfbgDFMV5w3CQfrul1CMH4tLS0BYFqsl7FyjPEsB";
+const appConfigProd = "https://uae4khqoag.execute-api.us-east-1.amazonaws.com/prod";
+const appConfigDev = "https://os46zn9hmk.execute-api.us-east-1.amazonaws.com/dev";
+
+const appHost = window.location.host.split('.');
+const appDocket = "www.facebookuserprivacysettlement.com";
+const appDocketAPI = appConfigProd + "/website?domain=" + appDocket + "&active=true";
+const appClaimForm = "./app/docs/" + appDocket + ".json";
+
+const reCAPTCHAv3 = '6LeVdgEVAAAAAGLdvtrwMCDZcDZzJ300FZHqvmud';
+const appPayMethod = "c0a312956f96110f801f1df5bf19bb7fbd072816ab2992fa63cda82bce2f5e08";
+const cookieDuration = 30; // Days
+
+const claimMethod = "claimsV3Post";
+
+const outputDiv = document.getElementById("output");
+const loading = document.getElementById('loading');
+const claimGuard = document.getElementById('guard');
+const claimConfirm = document.getElementById('confirmation');
+const claimForm = document.getElementById('form');
+
+
+let faqContactForm;
+
+function gtag() {
+    $.getScript("https://www.googletagmanager.com/gtag/js?id=G-LGF2TN8VN9", function () {
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+        gtag('config', 'G-WKXC7VDFFT'); // swatjs
+        gtag('config', 'G-LGF2TN8VN9');
+        gtag('event', 'conversion', { 'send_to': 'AW-11145896440/9eQxCKip3pcYEPjD48Ip' }); // Website traffic conversion page 
+        gtag('config', 'AW-11145896440');
+        gtag('config', 'UA-253458768-1');
+    });
+}
+
+function pixels() {
+    !function (f, b, e, v, n, t, s) {
+        if (f.fbq) return; n = f.fbq = function () {
+            n.callMethod ?
+            n.callMethod.apply(n, arguments) : n.queue.push(arguments)
+        };
+        if (!f._fbq) f._fbq = n; n.push = n; n.loaded = !0; n.version = '2.0';
+        n.queue = []; t = b.createElement(e); t.async = !0;
+        t.src = v; s = b.getElementsByTagName(e)[0];
+        s.parentNode.insertBefore(t, s)
+    }(window, document, 'script',
+        'https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init', '1707800616346006');
+    fbq('track', 'PageView');
+}
+
+function jsb_media() {
+    const img = createElement("img", {
+        height: 1,
+        width: 1,
+        style: "border-style:none;",
+        src: "https://insight.adsrvr.org/track/pxl/?adv=9tefqlz&ct=0:51p8384&fmt=3",
+    });
+    document.querySelector("header").appendChild(img);
+
+    if (typeof ttd_dom_ready === 'undefined') return;
+
+    ttd_dom_ready(function () {
+        if (typeof TTDUniversalPixelApi === 'function') {
+            var universalPixelApi = new TTDUniversalPixelApi();
+            universalPixelApi.init("9tefqlz", ["9h6zies"], "https://insight.adsrvr.org/track/up");
+        }
+    });
+}

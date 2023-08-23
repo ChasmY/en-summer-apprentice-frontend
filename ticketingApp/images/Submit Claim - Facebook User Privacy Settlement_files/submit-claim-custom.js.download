@@ -1,0 +1,302 @@
+const translateFieldNames = {
+    'es': {
+        'Did you reside in the United States at any time between May 24, 2007 and December 22, 2022, inclusive?': '¿Residió en Estados Unidos en algún momento entre el 24 de mayo de 2007 y el 22 de diciembre de 2022, o todo ese tiempo?',
+        'Were you a Facebook user at any time between May 24, 2007 and December 22, 2022?': '¿Fue un usuario de Facebook en algún momento entre el 24 de mayo de 2007 y el 22 de diciembre de 2022?',
+        'Are you filing a claim for a current account, a deleted account or a combination of both?': '¿Está presentando un reclamo por una cuenta corriente, una cuenta eliminada o una combinación de ambas?',
+        'Start Date (Approximate)': 'Fecha de inicio (aproximada)',
+        'End Date (Approximate)': 'Fecha de finalización (aproximada)',
+        'Payment Method': 'Método de pago',
+        'Email Address': 'Correo electrónico',
+        'Phone Number': 'Número de teléfono',
+        'Username': 'Nombre de usuario',
+        'Are you filing a claim for an active account, a deleted account or a combination of both?': '¿Está presentando un reclamo por una cuenta activa, una cuenta eliminada o una combinación de ambas?',
+        'Profile Information': 'Información del perfil',
+        'Account ID Type': 'Tipo de ID de cuenta',
+    }
+};
+
+function customConfirmation(claim) {
+    var confirmation;
+    if (userLanguage === 'en') {
+        confirmation = {
+            title: 'Your Claim Form has been submitted successfully.',
+            upload_fail: '',
+            print_note: 'Please print this page for your records.',
+            claim_details: {
+                title: 'Your Claim Details',
+                correlation_id: claim.correlation_id,
+                body: 'CLAIM INFORMATION',
+                footer: '<p class="text-center fs-6">If you have any questions regarding your Claim, please provide the Submitted Correlation ID listed above and email us at <a href="mailto:Info@FacebookUserPrivacySettlement.com">Info@FacebookUserPrivacySettlement.com</a></p>',
+                edit: '',
+                excluded_keys: ['Payment Token', 'Payment Email', 'Payment Phone', 'ag_UUID', 'user_language']
+            }
+        };
+    }
+    else if (userLanguage === 'es') {
+        confirmation = {
+            title: 'Su formulario de reclamación se ha enviado correctamente.',
+            upload_fail: '',
+            print_note: 'Por favor imprima esta página para sus archivos.',
+            claim_details: {
+                title: 'Detalles de su reclamo',
+                correlation_id: claim.correlation_id,
+                body: 'INFORMACIÓN DEL RECLAMO',
+                footer: '<p class="text-center fs-6">Si tiene alguna pregunta con respecto a su Reclamación, proporcione el ID de la Reclamación enviada que se indica arriba y envíenos un correo electrónico a <a href="mailto:Info@FacebookUserPrivacySettlement.com">Info @FacebookUserPrivacySettlement.com</a></p>',
+                edit: '',
+                excluded_keys: ['Payment Token', 'Payment Email', 'Payment Phone', 'ag_UUID', 'user_language']
+            }
+        };
+    }
+    return confirmation;
+}
+
+function customExclusionConfirmation(exclusion) {
+    var confirmation;
+    if (userLanguage === 'en') {
+        confirmation = {
+            title: 'Your Opt-Out Request has been submitted successfully.',
+            upload_fail: '',
+            print_note: 'Please print this page for your records.',
+            claim_details: {
+                title: 'Your Opt-Out Details',
+                correlation_id: '',
+                body: '',
+                footer: '<p class="text-center fs-6">If you have any questions regarding your Opt-Out Request, please email us at <a href="mailto:Info@FacebookUserPrivacySettlement.com">Info@FacebookUserPrivacySettlement.com</a></p>',
+                edit: '',
+                excluded_keys: []
+            }
+        };
+    } else if (userLanguage === 'es') {
+        confirmation = {
+            title: 'Su solicitud de exclusión se ha enviado con éxito.',
+            upload_fail: '',
+            print_note: 'Por favor imprima esta página para sus archivos.',
+            claim_details: {
+                title: 'Sus detalles de exclusión',
+                correlation_id: '',
+                body: '',
+                footer: '<p class="text-center fs-6">Si tiene alguna pregunta con respecto a su solicitud de exclusión, envíenos un correo electrónico a <a href="mailto:Info@FacebookUserPrivacySettlement.com">Info@FacebookUserPrivacySettlement.com</a></p>',
+                edit: '',
+                excluded_keys: []
+            }
+        };
+    }
+    return confirmation;
+}
+
+function customProcessClaim(claim) {
+    const reside = document.getElementById("select_field_us_reside_0");
+    const user = document.getElementById("select_field_fb_user_1");
+
+    if (!reside || !user || reside.value === "NO" || user.value === "NO") {
+        claim.flags.valid = false;
+        modal(i18n[userLanguage].error, i18n[userLanguage].not_eligible_submit_claim);
+        return claim;
+    }
+
+    let fb_info = false;
+    $('#transactions input').each(function (index, input) {
+        if (input.value) {
+            fb_info = true;
+            return false;
+        }
+    });
+    if (!fb_info) {
+        claim.flags.valid = false;
+        modal(i18n[userLanguage].error, i18n[userLanguage].custom_fb_association);
+        return claim;
+    }
+
+    if (!document.getElementById('payment_method') || !document.getElementById('payment_token') || !document.getElementById('payment_method').value || !document.getElementById('payment_token').value) {
+        claim.flags.valid = false;
+        modal(i18n[userLanguage].error, i18n[userLanguage].payment_select_error);
+        return claim;
+    }
+
+    if (document.getElementById('email_address').value && document.getElementById('payment_email').value && document.getElementById('email_address').value.toLowerCase() != document.getElementById('payment_email').value.toLowerCase()) {
+        claim.flags.valid = false;
+        modal(i18n[userLanguage].error, i18n[userLanguage].claim_processing_email_error);
+
+        setTimeout(function () {
+            let contactEmailAddress = document.getElementById('email_address').value.toLowerCase();
+            let paymentEmailAddress = document.getElementById('payment_email').value.toLowerCase();
+    
+            let contactEmailAddressError = document.getElementById('contactEmailAddressError');
+            let paymentEmailAddressError = document.getElementById('paymentEmailAddressError');
+    
+            contactEmailAddressError.innerHTML = `(<a href="mailto:${contactEmailAddress}">${contactEmailAddress}</a>)`;
+            paymentEmailAddressError.innerHTML = `(<a href="mailto:${paymentEmailAddress}">${paymentEmailAddress}</a>)`;
+        }, 1000);
+
+        return claim;
+    }
+
+    if (document.getElementById('phone_number_1').value && document.getElementById('payment_phone').value && document.getElementById('phone_number_1').value.replace(/\D/g, '') != document.getElementById('payment_phone').value.replace(/\D/g, '')) {
+        claim.flags.valid = false;
+        modal(i18n[userLanguage].error, i18n[userLanguage].claim_processing_phone_error);
+
+        setTimeout(function () {
+            let contactPhoneNumber = document.getElementById('phone_number_1').value.replace(/\D/g, '');
+            let paymentPhoneNumber = document.getElementById('payment_phone').value.replace(/\D/g, '');
+
+            let contactPhoneNumberError = document.getElementById('contactPhoneNumberError');
+            let paymentPhoneNumberError = document.getElementById('paymentPhoneNumberError');
+
+            contactPhoneNumberError.innerHTML = `(<a href="tel:${contactPhoneNumber}">${contactPhoneNumber}</a>)`;
+            paymentPhoneNumberError.innerHTML = `(<a href="tel:${paymentPhoneNumber}">${paymentPhoneNumber}</a>)`;
+        }, 1000);
+
+        return claim;
+    }
+}
+
+function customProcessExclusion(exclusion) {
+    let fb_info = false;
+    $('#transactions input').each(function (index, input) {
+        if (input.value) {
+            fb_info = true;
+            return false;
+        }
+    });
+    if (!fb_info) {
+        exclusion.valid = false;
+        modal(i18n[userLanguage].error, i18n[userLanguage].custom_fb_association);
+        return exclusion;
+    }
+}
+
+function activeDeletedQuestion() {
+
+    const username_acct = document.getElementById("table_responsive_1");
+    const username_acct_btn = document.getElementById("add_transactions_1");
+    username_acct.classList.add("d-none");
+    username_acct_btn.classList.add("d-none");
+
+    const email_acct = document.getElementById("table_responsive_2");
+    const email_acct_btn = document.getElementById("add_transactions_2");
+    email_acct.classList.add("d-none");
+    email_acct_btn.classList.add("d-none");
+
+    const phone_acct = document.getElementById("table_responsive_3");
+    const phone_acct_btn = document.getElementById("add_transactions_3");
+    phone_acct.classList.add("d-none");
+    phone_acct_btn.classList.add("d-none");
+
+    const deleted_account = document.getElementById("table_responsive_4");
+    const deleted_account_btn = document.getElementById("add_transactions_4");
+    deleted_account.classList.add("d-none");
+    deleted_account_btn.classList.add("d-none");
+
+    const account_status = document.getElementById("select_active_and_or_deleted_acct_2")
+    account_status.addEventListener("change", () => {
+
+        switch (account_status.value) {
+            case "Current Account(s)":
+                username_acct.classList.remove("d-none");
+                username_acct_btn.classList.remove("d-none");
+                email_acct.classList.remove("d-none");
+                email_acct_btn.classList.remove("d-none");
+                phone_acct.classList.remove("d-none");
+                phone_acct_btn.classList.remove("d-none");
+                deleted_account.classList.add("d-none");
+                deleted_account_btn.classList.add("d-none");
+                break;
+
+            case "Deleted Account(s)":
+                username_acct.classList.add("d-none");
+                username_acct_btn.classList.add("d-none");
+                email_acct.classList.add("d-none");
+                email_acct_btn.classList.add("d-none");
+                phone_acct.classList.add("d-none");
+                phone_acct_btn.classList.add("d-none");
+                deleted_account.classList.remove("d-none");
+                deleted_account_btn.classList.remove("d-none");
+                break;
+
+            case "Both Current and Deleted Accounts":
+                username_acct.classList.remove("d-none");
+                username_acct_btn.classList.remove("d-none");
+                email_acct.classList.remove("d-none");
+                email_acct_btn.classList.remove("d-none");
+                phone_acct.classList.remove("d-none");
+                phone_acct_btn.classList.remove("d-none");
+                deleted_account.classList.remove("d-none");
+                deleted_account_btn.classList.remove("d-none");
+                break;
+
+            default:
+                username_acct.classList.add("d-none");
+                username_acct_btn.classList.add("d-none");
+                email_acct.classList.add("d-none");
+                email_acct_btn.classList.add("d-none");
+                phone_acct.classList.add("d-none");
+                phone_acct_btn.classList.add("d-none");
+                deleted_account.classList.add("d-none");
+                deleted_account_btn.classList.add("d-none");
+                break;
+        }
+    });
+}
+
+function customLoadMember(claim) {
+
+    const username_acct = document.getElementById("table_responsive_1");
+    const username_acct_btn = document.getElementById("add_transactions_1");
+
+    const email_acct = document.getElementById("table_responsive_2");
+    const email_acct_btn = document.getElementById("add_transactions_2");
+
+    const phone_acct = document.getElementById("table_responsive_3");
+    const phone_acct_btn = document.getElementById("add_transactions_3");
+
+    const deleted_account = document.getElementById("table_responsive_4");
+    const deleted_account_btn = document.getElementById("add_transactions_4");
+
+    const account_status = document.getElementById("select_active_and_or_deleted_acct_2")
+
+    switch (account_status.value) {
+        case "Current Account(s)":
+            username_acct.classList.remove("d-none");
+            username_acct_btn.classList.remove("d-none");
+            email_acct.classList.remove("d-none");
+            email_acct_btn.classList.remove("d-none");
+            phone_acct.classList.remove("d-none");
+            phone_acct_btn.classList.remove("d-none");
+            deleted_account.classList.add("d-none");
+            deleted_account_btn.classList.add("d-none");
+            break;
+
+        case "Deleted Account(s)":
+            username_acct.classList.add("d-none");
+            username_acct_btn.classList.add("d-none");
+            email_acct.classList.add("d-none");
+            email_acct_btn.classList.add("d-none");
+            phone_acct.classList.add("d-none");
+            phone_acct_btn.classList.add("d-none");
+            deleted_account.classList.remove("d-none");
+            deleted_account_btn.classList.remove("d-none");
+            break;
+
+        case "Both Current and Deleted Accounts":
+            username_acct.classList.remove("d-none");
+            username_acct_btn.classList.remove("d-none");
+            email_acct.classList.remove("d-none");
+            email_acct_btn.classList.remove("d-none");
+            phone_acct.classList.remove("d-none");
+            phone_acct_btn.classList.remove("d-none");
+            deleted_account.classList.remove("d-none");
+            deleted_account_btn.classList.remove("d-none");
+            break;
+
+        default:
+            username_acct.classList.add("d-none");
+            username_acct_btn.classList.add("d-none");
+            email_acct.classList.add("d-none");
+            email_acct_btn.classList.add("d-none");
+            phone_acct.classList.add("d-none");
+            phone_acct_btn.classList.add("d-none");
+            deleted_account.classList.add("d-none");
+            deleted_account_btn.classList.add("d-none");
+            break;
+    }
+}

@@ -1,0 +1,70 @@
+* {
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+  }
+  
+  body {
+    padding: 0;
+    margin: 0;
+    background-color: #1a1a1a;
+    font-family: 'Poppins', sans-serif;
+  }
+  
+  .order-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px; /* Add some gap between order cards */
+    color: white;
+  }
+  
+  .order-card {
+    padding: 20px 20px 20px 55px;
+    border-radius: 10px;
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    
+
+    
+    width: 100%; /* Make sure each card takes up the full width */
+  }
+  
+  .order-header{
+    font-weight: bold;
+  }
+  .order-header,
+  .order-data {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+  }
+  
+  
+  .number-input {
+    width: 40px;
+    text-align: center;
+  }
+  
+  
+  .action-buttons {
+    display: flex;
+    flex-direction: column;
+    align-items: left;
+    gap: 5px;
+  }
+  
+  @media screen and (max-width: 768px) {
+    .order-container {
+      padding: 10px;
+    }
+  
+    .order-header,
+    .order-data {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 5px;
+    }
+  }

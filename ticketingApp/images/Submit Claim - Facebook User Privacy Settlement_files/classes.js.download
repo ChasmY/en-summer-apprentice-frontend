@@ -1,0 +1,1881 @@
+/**
+ * Header Class
+ * 
+ * Represents a header element with site name, case number, and court name.
+ * 
+ * @constructor
+ * @param {string} siteName - The name of the website.
+ * @param {string} caseNumber - The case number.
+ * @param {string} courtName - The name of the court.
+ * @property {string} siteName - The name of the website.
+ * @property {string} caseNumber - The case number.
+ * @property {string} courtName - The name of the court.
+ * @property {HTMLElement} element - The header element.
+ * @method createHeader - Creates the header element with site name, case number, and court name.
+ * @returns {HTMLElement} - The header element.
+ */
+class Header {
+    constructor(siteName, caseNumber, courtName) {
+        this.siteName = siteName;
+        this.caseNumber = caseNumber;
+        this.courtName = courtName;
+        this.element = this.createHeader();
+    }
+
+    createHeader() {
+        const row = createElement("div", { class: "row" });
+        const col = createElement("div", { class: "col" });
+
+        const siteNameHeader = createElement("h1", { class: "fs-1 fw-normal", id: "site-name" }, [], this.siteName);
+        const caseNumberHeader = createElement("h2", { class: "fs-5 fw-normal", id: "case-number" }, [], this.caseNumber);
+        const courtNameHeader = createElement("h2", { class: "fs-5 fw-normal", id: "court-name" }, [], this.courtName);
+
+        col.append(siteNameHeader, caseNumberHeader, courtNameHeader);
+        row.appendChild(col);
+
+        return createElement("div", { class: "container" }, [row]);
+    }
+}
+
+/**
+ * Navigation Class
+ * 
+ * Navigation class representing the website navigation.
+ * 
+ * @class
+ * @param {Array} pages - An array of objects representing website pages.
+ * @param {string} slug - The current page's slug.
+ */
+class Navigation {
+    constructor(pages, slug, dates = '') {
+        this.pages = pages;
+        this.slug = slug;
+        this.dates = dates;
+        this.element = this.createNav();
+    }
+
+    /**
+     * createNav()
+     * 
+     * Creates the website navigation HTML element.
+     * 
+     * @memberof Navigation
+     * @instance
+     * @returns {HTMLElement} - The website navigation HTML element.
+     */
+    createNav() {
+        const navBarToggler = createElement("button", {
+            class: "navbar-toggler",
+            type: "button",
+            "data-bs-toggle": "collapse",
+            "data-bs-target": "#app-navbar",
+            "aria-controls": "app-navbar",
+            "aria-expanded": "false",
+            "aria-label": "Toggle Navigation"
+        }, [], "MENU");
+
+        const navItems = this.pages.map(page => {
+            const regex = /--[\w-]+/g;
+            const matches = page.PageTitle.match(regex); 
+            const strippedMatches = matches ? matches.map(match => match.substring(2)) : null;
+            if (strippedMatches == 'hidden') return '';
+
+            let is_active = '';
+            if (this.slug == page.PageName || (this.slug === '' && page.PageName === 'home')) {
+                is_active = ' active';
+            }
+            return createElement("li", {
+                class: "nav-item",
+                "aria-current": "page"
+            }, [
+                createElement("a", {
+                    href: "#" + page.PageName,
+                    class: "nav-link px-3" + is_active
+                }, [], page.PageTitle)
+            ]);
+        });
+
+        const navigation = createElement("div", {
+            class: "collapse navbar-collapse",
+            id: "app-navbar",
+            role: "Navigation",
+            "aria-label": "Menu"
+        }, [
+            createElement("ul", {
+                class: "navbar-nav nav-pills me-auto mb-2 mb-lg-0"
+            }, navItems)
+        ]);
+
+        const submitClaimBtn = createElement("a", {
+            href: "#submit-claim",
+            id: "subClaimBtn",
+            class: "btn btn-lg text-uppercase",
+            style: this.pages.some(page => page.PageName === 'submit-claim') ? '' : 'display: none;'
+        }, [], i18n[userLanguage].nav_submit_claim_button);
+
+        const navBar = createElement("nav", {
+            class: "navbar navbar-expand-lg navbar-light bg-light border-bottom"
+        }, [
+            createElement("div", {
+                class: "container"
+            }, [
+                navBarToggler,
+                submitClaimBtn,
+                navigation
+            ])
+        ]);
+
+        return navBar;
+    }
+
+    /**
+     * hashChange()
+     * 
+     * Event listener that listens for changes in the URL hash and updates the webpage accordingly.
+     * 
+     * @param {Array} pages - An array of page objects containing the page names and titles.
+     * @param {string} slug - The current URL slug or hash value.
+     * @returns {void}
+     */
+    hashChange(pages, slug, dates) {
+        window.addEventListener("hashchange", function () {
+            slug = window.location.hash.substring(1);
+
+            // Remove query string from URL
+            window.history.replaceState(null, null, "/#" + slug);
+
+            outputDiv.innerHTML = ``;
+            isPageActive(slug);
+            getPage(pages, slug, dates);
+
+            document.querySelector('#app-navbar').classList.remove("show");
+        });
+    }
+}
+
+/**
+ * Footer Class
+ * 
+ * A class representing the footer of a website.
+ * 
+ * @class
+ */
+class Footer {
+    constructor() {
+        this.element = this.createFooter();
+    }
+
+    /**
+     * Create the footer element.
+     * @returns {HTMLElement} The footer HTML element.
+     */
+    createFooter() {
+        const current_year = new Date().getFullYear();
+        const div = createElement("div", {
+            class: "text-center py-3",
+        }, [
+            createElement("span", { id: "copyright", }, [], `&copy; ${current_year}`),
+            createElement("span", { id: "pipe" }, [], ` | `),
+            createElement("span", { id: "privacy-policy" }, [], `<a href="${i18n[userLanguage].privacy_policy_url}" target="_blank" rel="noopener noreferrer" aria-label="${i18n[userLanguage].privacy_policy}">${i18n[userLanguage].privacy_policy}</a>`)
+        ]);
+        return div;
+    }
+}
+
+/**
+ * Represents a class for generating the Important Dates section of the website.
+ * @class
+ * @param {Object} json - The JSON object containing the dates to be displayed.
+ * @param {Array} longDate - The array of date strings that require a long format.
+ */
+class ImportantDates {
+    constructor(params) { // "Hearing" NEED TO BE i18n
+        this.params = params;
+        this.long_date = {
+            en: "Hearing",
+            es: "AUDIENCIA DE APROBACIÓN DEFINITIVA"
+        };
+    }
+
+    /**
+     * Generates the HTML for the Important Dates section.
+     * @returns {HTMLElement} The Important Dates card element.
+     */
+    card() {
+        const datesCard = createElement("div", {
+            class: "class bg-light text-dark border rounded p-3 impt-dates",
+            id: "importantDatesCard",
+        }, [
+            createElement("h3", {
+                class: "text-danger text-center mb-4 card-title",
+                id: "impt-dates-title",
+            }, [], i18n[userLanguage].important_dates),
+            createElement("div", {
+                class: "card-body px-3",
+                id: "impt-dates-body",
+            }, [], this.dates().outerHTML),
+        ]);
+
+        return datesCard;
+    }
+
+    /**
+     * Generates the list of Important Dates.
+     * @returns {HTMLElement} The Important Dates list element.
+     */
+    dates() {
+        const json = this.params.findResult;
+        const card = createElement("div", { class: "card-text px-3", id: "impt-dates-text", });
+        const titles = json.lang[userLanguage].ImportantDates;
+        const dates = json.ImportantDates;
+
+        let dateID = 0;
+        dates.forEach(item => {
+
+            const title = titles[dateID]?.Title;
+
+            let display_date = (title) => {
+
+                const value = this.long_date[userLanguage].toLowerCase();
+                const titleLowerCase = title.toLowerCase();
+
+                return (titleLowerCase.includes(value))
+                    ? this.dateTime(item.Date)
+                    : this.dateString(item.Date);
+            };
+
+            const body = `<strong>${display_date(title)}</strong><br><span>${title}</span>`;
+            const date = createElement("div", {
+                class: "mb-3 impt-dates-div",
+                id: "impt-dates-div_" + dateID,
+            }, [], body);
+
+            card.appendChild(date);
+            dateID++;
+        });
+        return card;
+    }
+
+    dateString(params) {
+        const date = new Date(params).toLocaleString(appLocale, {
+            timeZone: "America/Los_Angeles",
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+        return date;
+    }
+
+    // Defaults to PST/PDT
+    dateTime(params) {
+        const date = new Date(params).toLocaleString(appLocale, {
+            timeZone: "America/Los_Angeles",
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: 'numeric',
+            timeZoneName: 'short'
+        });
+        return date;
+    }
+}
+
+/**
+ * Represents a class for generating Pages of the website
+ * @class
+ * @param {Object} pages 
+ * @param {String} slug 
+ * @param {Array} dates
+ */
+class Page {
+    constructor(pages, slug, dates) {
+        this.pages = pages;
+        this.slug = slug;
+        this.dates = dates;
+    }
+
+    home() {
+        const Pages = this.pages;
+        Pages.forEach(page => {
+            if (this.slug !== page.PageName) return;
+
+            const pageAlert = createElement("div", { class: "alert border-dark bg-light text-danger mb-3 pt-4 text-center", id: "pageAlert", }, [], page.PageAlert);
+            const pageHeader = createElement("h2", { class: "text-center pageHeader", id: "pageHeader_" + this.slug, }, [], page.PageHeader);
+            const pageSubHeader1 = createElement("p", { class: "text-center fw-bold fst-italic pageSubHeader1", id: "pageSubHeader1_" + this.slug, }, [], page.PageSubHeader1);
+            const pageSubHeader2 = createElement("p", { class: "text-center fst-italic pageSubHeader2", id: "pageSubHeader2_" + this.slug, }, [], page.PageSubHeader2);
+            const divImptDates = createElement("div", { class: "my-5 mx-auto", id: "ImportantDates", style: "max-width: 512px;", }, [], this.dates.card().outerHTML);
+            const pageLead = createElement("div", { class: "mb-3 pageLead", id: "pageLead_" + this.slug, }, [], page.PageLead);
+            const pageContent = createElement("div", { class: "mb-3 pageContent", id: "pageContent_" + this.slug, }, [], page.PageContent);
+
+            // Legal Rights and Options Table
+            const optionsDIV = createElement("div", {
+                class: "table-responsive optionsDIV",
+                id: "optionsDIV_" + this.slug,
+            }, [
+                createElement("table", {
+                    class: "table table-bordered table-striped table-hover options my-3 optionsTABLE",
+                    id: "optionsTABLE_" + this.slug,
+                }, [
+                    createElement("thead", {}, [
+                        createElement("tr", {}, [
+                            createElement("th", { colspan: 2, class: "text-center fs-4", }, [], page.PageTable.TableTitle),
+                        ]),
+                    ]),
+                    createElement("tbody", { class: "optionsTbody" }, returnRows()),
+                ]),
+            ]);
+            /**
+             * Returns an array of table rows with heading and content cells.
+             * @returns {HTMLElement[]} - An array of HTML table rows with cells
+             */
+            function returnRows() {
+                const rows = [];
+                let rowID = 0;
+                page.PageTable.TableRows.forEach(row => {
+                    const tr = createElement("tr", {}, [
+                        createElement("th", { scope: "row", class: "text-center align-middle p-3", id: "thID_" + rowID, }, [], row.Heading),
+                        createElement("td", { class: "p-3", id: "tdID_" + rowID, }, [], row.Content),
+                    ]);
+                    rows.push(tr);
+                    rowID++;
+                })
+                return rows;
+            }
+            const pageFooter = createElement("div", { class: "mb-3", id: "pageFooter", }, [], page.PageFooter);
+            const pageElement = createElement("div", {
+                class: "page",
+                id: this.slug,
+            }, [
+                Boolean(page.PageAlert) ? pageAlert : '',
+                pageHeader,
+                pageSubHeader1,
+                pageSubHeader2,
+                divImptDates,
+                pageLead,
+                pageContent,
+                optionsDIV,
+                pageFooter,
+            ]);
+            outputDiv.appendChild(pageElement);
+        });
+        analytics();
+        loadingGif(loading, "hide", 1000);
+    }
+
+    important_documents() {
+        const Pages = this.pages;
+        Pages.forEach(page => {
+            if (this.slug !== page.PageName) return;
+
+            const PageTitle = createElement("h2", { id: "PageTitle" }, [page.PageTitle]);
+            const Separator = createElement("hr");
+            const DocsColumn = createElement("div", { class: "col-md-8" });
+            const DatesColumn = createElement("div", { class: "col-md-4" });
+
+            const divImptDates = createElement("div", { id: "ImportantDates" }, [], this.dates.card().outerHTML);
+            const DocsList = createElement("ul", { class: "list-unstyled" });
+
+            page.PageContent.forEach(listItem => {
+                const DocIcon = createElement("i", { class: "bi bi-file-earmark-pdf text-danger me-1", style: "font-size: 24px;" });
+                const DocsLink = createElement("a", {
+                    href: listItem.DocURL,
+                    target: "_blank",
+                    rel: "noopener noreferrer",
+                    style: "color:black;text-decoration:none;"
+                }, [DocIcon, listItem.DocTitle]);
+
+                const DocsListItem = createElement("li", { class: "mb-3 fs-5 imptDocs" }, [DocsLink]);
+                DocsList.append(DocsListItem);
+            });
+
+            DocsColumn.appendChild(DocsList);
+            DatesColumn.appendChild(divImptDates);
+
+            const Row = createElement("div", { class: "row" }, [DocsColumn, DatesColumn]);
+            const pageElement = createElement("div", { class: "page" }, [PageTitle, Separator, Row]);
+
+            outputDiv.appendChild(pageElement);
+        });
+        analytics();
+        loadingGif(loading, "hide", 1000);
+    }
+
+    faqs() {
+        const Pages = this.pages;
+        Pages.forEach(page => {
+            if (this.slug !== page.PageName) return;
+
+            const PageTitle = createElement("h2", { id: "PageTitle" }, [page.PageTitle]);
+            const Separator = createElement("hr");
+            const Accordion = createElement("div", { class: "accordion accordion-flush", id: "frequentlyAskedQuestions" });
+
+            let count = 0;
+
+            page.PageContent.forEach(section => {
+                const titleString = section.SectionTitle;
+                const regex = /--\w+/g; 
+                const matches = titleString.match(regex); 
+                const strippedMatches = matches ? matches.map(match => match.substring(2)) : null;
+                if (Boolean(strippedMatches) && !strippedMatches.includes(this.slug)) return;
+                const titleSlice = titleString.search(matches);
+
+                const Title = matches ? titleString.slice(0,titleSlice): titleString;
+                const Lead = section.SectionLead;
+                const SectionFAQs = section.SectionFAQs;
+
+                const theTitle = createElement("h4", { class: "mt-4 section-title" }, [Title]);
+                const theLead = createElement("div", { class: "section-lead" });
+                theLead.innerHTML = Lead;
+                const sectionAnswers = createElement("div", { class: "section-answers" });
+
+                SectionFAQs.forEach(faq => {
+                    count++;
+
+                    const QuestionButton = createElement("button", {
+                        class: "faqs-btn accordion-button collapsed question-btn",
+                        type: "button",
+                        "data-bs-toggle": "collapse",
+                        "data-bs-target": `#faq-${count}`,
+                        "aria-expanded": "false",
+                        "aria-controls": `faq-${count}`
+                    }, [`${count}. ${faq.Question}`]);
+
+                    const QuestionHeader = createElement("h2", {
+                        class: "question-header faqs-header accordion-header",
+                        id: `${count}`
+                    }, [QuestionButton]);
+
+                    const AnswerDiv = createElement("div", {
+                        class: "accordion-collapse collapse p-3 answer",
+                        id: `faq-${count}`,
+                        "aria-labelledby": `${count}`,
+                        "data-bs-parent": "#frequentlyAskedQuestions"
+                    });
+                    AnswerDiv.innerHTML = faq.Answer;
+
+                    sectionAnswers.append(QuestionHeader, AnswerDiv);
+                });
+
+                Accordion.append(theTitle);
+                if (Lead) {
+                    Accordion.append(theLead);
+                }
+                Accordion.append(sectionAnswers);
+            });
+
+            const pageElement = createElement("div", { class: "page" }, [PageTitle, Separator, Accordion]);
+            outputDiv.appendChild(pageElement);
+        });
+        analytics();
+        loadingGif(loading, "hide", 1000);
+    }
+
+    contact(contactConstructor, userLanguage) {
+        const Pages = this.pages;
+        Pages.forEach(page => {
+            if (this.slug !== page.PageName) return;
+            contactConstructor(this, page, userLanguage);
+        });
+        analytics();
+        loadingGif(loading, "hide", 1000);
+    }
+
+    media() {
+        const Pages = this.pages;
+        
+        Pages.forEach(page => {
+            if (this.slug !== page.PageName) return;
+            const PageTitle = createElement("h2", { id: "PageTitle" }, [page.PageTitle.split('--')[0]]);
+
+            const MediaLinks = createElement("div", { class: "mt-5 text-center" });
+            let row;
+            page.PageContent.forEach((listItem, index) => {
+                const Copyright = createElement("p", { class: "mb-0" });
+                Copyright.innerHTML = `&copy; ${listItem.Copyright}`;
+
+                const Disclaimer = listItem.Subscription ? createElement("p", { class: "mb-0" }, ['(May require subscription)']) : '';
+
+                const Link = createElement("div", { class: "col-md-5 mb-5 pb-5 border-bottom" }, [
+                    createElement("a", { href: listItem.Link, target: "_blank" }, [
+                        createElement("img", { src: `app/img/media/${listItem.Logo}`, style: "max-height: 70px;", class: "mb-1" }),
+                        createElement("br")
+                    ]),
+                    createElement("a", { href: listItem.Link, target: "_blank" }, [listItem.Title]),
+                    Disclaimer,
+                    createElement("p", { class: "mb-0" }, [listItem.Author]),
+                    createElement("p", { class: "mb-0" }, [listItem.Date]),
+                    Copyright
+                ]);
+                if (index % 2 == 0) {
+                    row = createElement("row", { class: "row" });
+                    row.appendChild(Link);
+                    MediaLinks.appendChild(row);
+                } else {
+                    Link.classList.add('offset-md-2');
+                    row.appendChild(Link);
+                }
+            });
+
+            const pageElement = createElement("div", { class: "page" }, [PageTitle, MediaLinks]);
+            outputDiv.appendChild(pageElement);
+        });
+        analytics();
+        loadingGif(loading, "hide", 1000);
+    }
+
+    error() {
+        const notFound = createElement("div", {
+            class: "error",
+            id: "page-not-found"
+        }, [
+            createElement("h3", { class: "fs-1" }, [], `Error`),
+            createElement("p", {}, [], `Page not found.`),
+        ]);
+        outputDiv.appendChild(notFound);
+        loadingGif(loading, "hide", 250);
+        analytics();
+    }
+}
+
+/**
+ * Represents a class for returning the claim form
+ * @class
+ */
+class Claim {
+    constructor(data, language) {
+        this.data = data;
+        this.lang = language;
+        this.config = {
+            apiKey: appConfigKey,
+            url: this.environment(),
+        };
+        this.claim = {
+            api: apigClientFactory.newClient(this.config),
+            form: claimForm,
+            inputs: {
+                contact: {},
+                fields: null,
+                transactions: null,
+                w9: null,
+            },
+            uploads: [],
+            flags: {
+                valid: true,
+                sent: false,
+                success: true,
+                method: claimMethod,
+            },
+            data: {
+                domain: this.hostname(),
+                contact: {},
+                fields: {},
+                transactions: {},
+                w9: {},
+                files: [],
+            },
+        };
+        this.exclusion = {
+            api: apigClientFactory.newClient(this.config),
+            inputs: {},
+            valid: true,
+            sent: false,
+            data: {
+                domain: this.hostname(),
+                transactions: {},
+            },
+        }
+    }
+
+    hostname() {
+        var hostname = window.location.hostname;
+        if (hostname.split('.').length === 2) {
+            hostname = `www.${hostname}`;
+        }
+        return hostname;
+    }
+
+    environment() {
+        var hostname = this.hostname();
+        if (hostname.startsWith('local') || hostname === 'localhost' || hostname.split('.')[1] === 'angeiontest') {
+            return appConfigDev;
+        }
+        return appConfigProd;
+    }
+
+    guard(params, getDeadline) {
+
+        const form = createElement("form", {
+            class: "needs-validation",
+            id: "guard",
+            method: "post"
+        }, [
+            createElement("div", { class: "row fs-5", id: "guardRow", }, [
+                this.notice_confirmation(params),
+                this.notice_generic(params),
+            ]),
+            this.claim_deadline(params, getDeadline),
+        ]);
+        return form;
+    }
+
+
+    notice_confirmation(params, additionalParams) {
+        const noticeID = createElement("fieldset", {
+            class: additionalParams ? additionalParams : "col-md-6 mb-5",
+            id: "notice-confirmation",
+        }, [
+            createElement("div", {
+                class: "bg-light text-dark border rounded p-3",
+            }, [
+                createElement("p", { class: "mb-3" }, [], params.form_options.notice_confirmation.body),
+                createElement("div", { class: "mb-3" }, [
+                    createElement("input", { type: "text", name: "zero_zero_id", class: "form-control", id: "zero_zero_id", "data-validate": "required", required: "" }),
+                    createElement("label", { for: "zero_zero_id", }, [], params.form_options.notice_confirmation.zero_zero_id + " <span class=\"error\"></span>"),
+                ]),
+                createElement("div", { class: "mb-3" }, [
+                    createElement("input", { type: "text", name: "confirmation_code", class: "form-control", id: "confirmation_code", "data-validate": "required", required: "" }),
+                    createElement("label", { for: "confirmation_code", }, [], params.form_options.notice_confirmation.confirmation_code + " <span class=\"error\"></span>"),
+                ]),
+                createElement("div", {}, [
+                    createElement("input", { type: "submit", class: "btn btn-primary", id: "submit-guard", value: params.form_options.notice_confirmation.submit_guard, }),
+                ]),
+            ]),
+        ])
+        return noticeID;
+    }
+
+    notice_generic(params) {
+        const genericID = createElement("fieldset", {
+            class: "col-md-6 mb-5",
+            id: "notice-general",
+        }, [
+            createElement("div", { class: "bg-light text-dark border rounded p-3", }, [
+                createElement("p", [], [], params.form_options.generic_claim.body),
+                createElement("input", {
+                    type: "button",
+                    class: "btn btn-primary",
+                    id: "skip-guard",
+                    value: params.form_options.generic_claim.submit,
+                    "aria-label": params.form_options.generic_claim.body,
+                }),
+            ]),
+        ]);
+        return genericID;
+    }
+
+    claim_deadline(params, additionalParams) {
+
+        const alert = `<p class="mb-0">${params.form_options.claim_deadline_alert.body}</p>`;
+        const parser = new DOMParser();
+        const string = parser.parseFromString(alert, "text/html");
+
+        const date_string = string.querySelector("span");
+        date_string.textContent = additionalParams;
+
+        const div = createElement("div", {
+            class: "alert alert-warning my-3 text-center",
+            id: "claim_form_alert"
+        }, [], string.body.innerHTML);
+
+        return div;
+    }
+
+    claim_form(params) {
+
+        const form = createElement("form", {
+            class: "needs-validation",
+            id: "form",
+            method: "post"
+        }, [
+            createElement("h3", {
+                class: "text-center mb-3",
+                id: "claimFormDeadline"
+            }, [], params.form_options.claim_deadline_alert.claim_form),
+            createElement("div", {
+                class: "alert alert-info text-center fw-bold text-dark",
+                id: "confirmation-email-alert",
+                role: "alert"
+            }, [], params.form_options.claim_form.confirmation_email_notice),
+            this.claim_instructions(params),
+            this.claim_contact_information(params),
+            this.claim_fieldset(params),
+            this.claim_transactions(params),
+            params.claim_upload.documentation.required ? this.claim_documentation(params) : ``,
+            this.claim_payment_method(params),
+            this.claim_certification(params),
+        ]);
+        return form;
+    }
+
+    exclusion_form(params, display = '') {
+        const form = createElement("form", {
+            class: "needs-validation" + display,
+            id: "form",
+            method: "post"
+        }, [
+            createElement("h3", {
+                class: "text-center text-decoration-underline mb-3",
+            }, [], params.form_options.exclusion_form.title),
+            createElement("div", {
+                class: "alert alert-info text-dark text-center fw-semibold mb-3"
+            }, [], i18n[userLanguage].exclusion_form_top_notice),
+            createElement("div", {
+                class: "text-center mb-3",
+            }, [], params.form_options.exclusion_form.body),
+
+            this.claim_contact_information(params),
+            this.claim_transactions(params),
+            this.claim_certification(params.form_options.exclusion_form),
+        ]);
+        return form;
+    }
+
+    claim_instructions(params) {
+        if (params.form_options.claim_form.general_instructions.display === false) {
+            return createElement("div", { class: "d-none" });
+        }
+        return createElement("div", {
+            class: "mb-3",
+            id: "generalInstructionsWrapper",
+        }, [
+            createElement("div", {
+                class: "text-center fw-bold fs-3"
+            }, [
+                createElement("a", { class: "", "data-bs-toggle": "collapse", href: "#generalInstructions", "aria-expanded": "false", "aria-controls": "generalInstructions" }, [], params.form_options.claim_form.general_instructions.title),
+            ]),
+            createElement("div", {
+                class: "collapse",
+                id: "generalInstructions"
+            }, [
+                createElement("div", {
+                    class: "bg-light text-dark border rounded p-3 mb-3",
+                }, [], params.form_options.claim_form.general_instructions.body)
+            ]),
+        ]);
+    }
+
+    claim_contact_information(params) {
+        let d_none = (Boolean(params.form_options.claim_form.contact_information.body)) ? "" : " d-none";
+        const fieldset = createElement("fieldset", {
+            class: "bg-light text-dark border rounded p-3 mb-5",
+            id: "contact-information",
+        }, [
+            createElement("legend", { class: "mb-3" }, [], params.form_options.claim_form.contact_information.title),
+            createElement("p", { class: "mb-3" + d_none, }, [], params.form_options.claim_form.contact_information.body),
+            this.claim_contact_fields(params),
+        ]);
+        return fieldset;
+    }
+
+    claim_contact_fields(params) {
+        const parent = createElement("div", { class: "row row-cols-1 row-cols-md-2" });
+        let fieldID = 0;
+        params.contact_information.forEach(field => {
+            let input;
+            let validation;
+            if (field.type === "select") {
+                input = createElement("select", {
+                    name: field.name,
+                    class: field.className,
+                    id: field.name,
+                    "data-validate": field.required ? "required" : "",
+                    "data-contact-label": field.label
+                });
+                field.values.forEach(value => {
+                    const option = createElement("option", {
+                        value: value.value,
+                    }, [], value.label);
+                    input.appendChild(option);
+                });
+            } else {
+                validation = '';
+                if (field.required) {
+                    validation = 'required';
+                }
+                if (field.validation) {
+                    validation += ` ${field.validation}`;
+                }
+                input = createElement("input", {
+                    type: field.type || "text",
+                    name: field.name,
+                    class: field.className,
+                    id: field.name,
+                    placeholder: (field.type === "tel") ? `${i18n[userLanguage].example}: 855-556-2233` : ``,
+                    "data-validate": validation,
+                    "data-contact-label": field.label
+                });
+            }
+
+            let d_none = field.name === 'province' || field.name === 'postal_code' ? " d-none" : "";
+
+            const div = createElement("div", {
+                class: "col mb-3 divContactField" + d_none,
+                id: "divContactField_" + fieldID,
+            }, [
+                createElement("label", {
+                    for: field.name,
+                }, [], `${field.label}${field.required ? "*" : ""} <span class="error"></span>`),
+                input,
+            ]);
+            parent.appendChild(div);
+            fieldID++;
+        });
+        return parent;
+    }
+
+    claim_fieldset(params) {
+        if (Boolean(params.claim_fields.length)) {
+            const title = params.form_options.claim_form.claim_fields.title;
+            const body = params.form_options.claim_form.claim_fields.body;
+            const fieldset = createElement("fieldset", {
+                class: "bg-light text-dark border rounded p-3 mb-5",
+                id: "claim-fields"
+            }, [
+                createElement("legend", {}, [], title),
+                createElement("p", {}, [], body),
+                this.claim_fields(params),
+            ])
+            return fieldset;
+        }
+    }
+
+    claim_fields(params) {
+        const container = createElement("div");
+
+        let fieldID = 0;  //
+        params.claim_fields.forEach(field => {
+            let element;
+            let validation;
+            switch (field.type) {
+                case "header": // <h1><h2><h3><h4><h5><h6>
+                    element = createElement(field.subtype, [], [], field.label);
+                    break;
+                case "paragraph": // <p>
+                    element = createElement(field.subtype, [], [], field.label);
+                    break;
+                case "text": // <input type="text">
+                    validation = '';
+                    if (field.required) {
+                        validation = 'required';
+                    }
+                    if (field.validation) {
+                        validation += ` ${field.validation}`;
+                    }
+                    element = createElement("input", {
+                        type: "text",
+                        name: field.name + "_" + fieldID,
+                        class: field.className,
+                        id: field.name + "_" + fieldID,
+                        "data-validate": validation,
+                        "data-label": field.label,
+                        // required: field.required
+                    });
+                    break;
+                case "date": // <input type="date">
+                    validation = 'date';
+                    if (field.required) {
+                        validation += ' required';
+                    }
+                    if (field['data-date-min']) {
+                        validation += ' date-min';
+                    }
+                    if (field['data-date-max']) {
+                        validation += ' date-max';
+                    }
+                    element = createElement("input", {
+                        type: "date",
+                        name: field.name + "_" + fieldID,
+                        class: field.className,
+                        id: field.name + "_" + fieldID,
+                        "data-validate": validation,
+                        "data-label": field.label,
+                        "data-date-format": field['data-date-format'] || 'YYYY-MM-DD',
+                        "data-date-min": field['data-date-min'] || '',
+                        "data-date-max": field['data-date-max'] || '',
+                        // required: field.required
+                    });
+                    break;
+                case "textarea": // <textarea>
+                    element = createElement("textarea", {
+                        name: field.name,
+                        class: field.className,
+                        id: field.name + "_" + fieldID,
+                        "data-validate": field.required ? "required " : "",
+                        "data-label": field.label,
+                    });
+                    break;
+                case "select": // <select>
+                    element = createElement("select", {
+                        name: field.name,
+                        class: field.className,
+                        id: field.name + "_" + fieldID,
+                        "data-validate": field.required ? "required " : "",
+                        "data-label": field.label,
+                    });
+
+                    field.values.forEach(option => { // <option>
+                        const optionElement = createElement("option", {
+                            value: (option.value) ? option.value : "",
+                        }, [], option.label);
+                        element.appendChild(optionElement);
+                    });
+                    break;
+                case "radio-group":
+                    element = createElement("div", {
+                        class: "form-check"
+                    });
+                    let optionID = 0;
+                    field.values.forEach((option, index) => {
+                        const inputElement = createElement("input", {
+                            type: "radio",
+                            name: field.name,
+                            class: "form-check-input",
+                            id: field.name + "_" + optionID,
+                            value: "YES",
+                            "data-validate": field.required ? "required " : "",
+                            "data-label": field.label,
+                        });
+
+                        const labelElement = createElement("label", {
+                            for: field.name + "_" + optionID,
+                            class: "form-check-label",
+                        }, [], option.label + " <span class=\"error\"></span>");
+
+                        const divElement = createElement("div", {
+                            class: "form-check"
+                        });
+
+                        divElement.appendChild(inputElement);
+                        divElement.appendChild(labelElement);
+
+                        element.appendChild(divElement);
+                        optionID++;
+                    });
+                    break;
+                case "checkbox-group":
+                    element = createElement("div", {
+                        class: "form-check"
+                    });
+                    let checkboxID = 0;
+                    field.values.forEach((option, index) => {
+                        const input = createElement("input", {
+                            type: "checkbox",
+                            name: field.name,
+                            class: "form-check-input",
+                            id: field.name + "_" + checkboxID,
+                            value: option.value,
+                            "data-validate": field.required ? "required " : "",
+                            "data-label": field.label,
+                        });
+                        const label = createElement("label", {
+                            for: field.name + "_" + checkboxID,
+                            class: "form-check-label",
+                        }, [], option.label + "<span class=\"error\"></span>");
+
+                        const divElement = createElement("div", {
+                            class: field.inline ? "form-check-inline" : "form-check"
+                        }, [
+                            input,
+                            label
+                        ]);
+                        element.appendChild(divElement);
+                        checkboxID++;
+                    });
+                    break;
+                case 'hidden':
+                    element = createElement("input", {
+                        type: "hidden",
+                        name: field.name,
+                        id: field.name,
+                        "data-label": field.label,
+                    });
+                    break;
+                default:
+                    console.error(`Unknown field type "${field.type}"`);
+                    return;
+            }
+
+            const div = createElement("div", { class: "mb-3" });
+
+            if (field.type === "text" || field.type === "date" || field.type === "textarea" || field.type === "select") {
+                let fieldLabel;
+                if (typeof translateFieldNames !== 'undefined' && translateFieldNames[userLanguage]) {
+                    fieldLabel = translateFieldNames[userLanguage][field.label];
+                } else {
+                    fieldLabel = field.label;
+                }
+                // const label = document.createElement("label");
+                const star = (field.required) ? "*" : "";
+                const label = createElement("label", {
+                    for: field.name + "_" + fieldID,
+                }, [], `${fieldLabel}${star} <span class="error"></span>`);
+                div.appendChild(label);
+            }
+
+            div.appendChild(element);
+            container.appendChild(div);
+            fieldID++;
+        });
+
+        return container;
+    }
+
+    claim_transactions(params) {
+        if (Boolean(params.claim_transactions.length)) {
+
+            const fieldset = createElement("fieldset", {
+                class: "bg-light text-dark border rounded p-3 mb-5",
+                id: "transactions"
+            }, [
+                createElement("legend", { class: "mb-3" }, [], params.form_options.transactions.title),
+                createElement("p", { class: "mb-3" }, [], params.form_options.transactions.body),
+            ]);
+
+            // For Each Transaction Table
+            const claim_transactions = params.claim_transactions;
+            let tableID = 0;
+            claim_transactions.forEach(table => {
+                tableID++; // Begin count at 1.
+
+                // <div class="table-responsive"></div>
+                const divResponsiveTable = createElement("div", { class: "table-responsive mb-3", id: "table_responsive_" + tableID });
+
+                // <h4 class="table-title"></h4>
+                const tableName = createElement("h4", { class: "table-title mb-3", id: "table_title_" + tableID }, [], table.name);
+                divResponsiveTable.appendChild(tableName);
+
+                // <p class="table-paragraph"></p>
+                const tableDesc = createElement("p", { class: "table-paragraph mb-3", id: "table_description_" + tableID }, [], table.description);
+                divResponsiveTable.appendChild(tableDesc);
+
+                // <table class="table transactions"></table>
+                const tableTransaction = createElement("table", { class: "table table-hover transactions", id: "transactions_" + tableID });
+                divResponsiveTable.appendChild(tableTransaction);
+
+                // <caption>...For Screen Readers...</caption>
+                const tableCaption = createElement("caption", { "style": "display:none;" }, [], table.description);
+                tableTransaction.appendChild(tableCaption);
+
+                // <thead class="bg-dark text-light"></thead>
+                const tableTHEAD = createElement("thead", { class: "table-dark text-light" });
+                tableTransaction.appendChild(tableTHEAD);
+
+                // <tr> ...Table Data Cells... </tr>
+                const theadTR = createElement("tr");
+                tableTHEAD.appendChild(theadTR);
+
+                // <th scope="col"></th>
+                table.columns.forEach(col => {
+                    const column = createElement("th", { scope: "col" }, [], col.title);
+                    theadTR.appendChild(column);
+
+                    if (Boolean(col.body)) {
+                        const helper = createElement("span", { class: "d-block fw-normal", class: "fs-6", }, [], col.body);
+                        column.appendChild(helper);
+                    }
+                });
+
+                // <tbody></tbody>
+                const tableTBODY = createElement("tbody");
+                tableTransaction.appendChild(tableTBODY);
+
+                // Add rows through a function so we can attach a button.
+                let countRow = 1;
+                this.claim_transaction_row(table, tableTBODY, tableID, countRow);
+
+                const add_row = createElement("p", {
+                    class: "text-center",
+                }, [
+                    createElement("a", {
+                        class: "btn btn-primary",
+                        id: "add_transactions_" + tableID,
+                        "tableID": tableID,
+                    }, [], `<i class="bi bi-plus-circle" tableID="${tableID}"></i> ${table.name}`),
+                ])
+
+                // Add row for every click
+                add_row.firstChild.addEventListener("click", event => {
+                    countRow++;
+                    let table_id = event.target.attributes.tableID.value;
+                    this.claim_transaction_row(table, tableTBODY, table_id, countRow);
+                });
+
+                fieldset.appendChild(divResponsiveTable);
+                fieldset.appendChild(add_row);
+            });
+
+            return fieldset;
+        }
+    }
+
+    claim_transaction_row(table, tableTBODY, tableID, countRow) {
+
+        // <tr> ...Transaction Field Rows... </tr>
+        const fieldsRow = createElement("tr");
+        tableTBODY.appendChild(fieldsRow);
+
+        let fieldID = 0;
+        let rowNo = 1;
+        table.fields.forEach(field => {
+            fieldID++;
+            let element, formInput, formLabel, required, validation;
+            let fieldLabel;
+            if (typeof translateFieldNames !== 'undefined' && translateFieldNames[userLanguage]) {
+                fieldLabel = translateFieldNames[userLanguage][field.label];
+            } else {
+                fieldLabel = field.label;
+            }
+            switch (field.type) {
+                case "text": // <input type="text">
+                    validation = '';
+                    if (field.required && countRow == 1) {
+                        validation = 'required';
+                    }
+                    if (field.validation) {
+                        validation += ` ${field.validation}`;
+                    }
+                    element = createElement("div");
+                    formInput = createElement("input", {
+                        type: "text",
+                        name: field.name + '_' + tableID + '_' + countRow,
+                        class: field.className,
+                        id: field.name + '_' + tableID + '_' + countRow,
+                        "data-validate": validation,
+                        "data-label": field.label,
+                        // required: field.required,
+                        "item-id": countRow,
+                    });
+                    formLabel = createElement("label", {
+                        for: field.name + '_' + tableID + '_' + countRow,
+                        class: "fs-6",
+                    });
+                    required = (field.required && countRow == 1) ? "*" : "";
+                    formLabel.innerHTML = fieldLabel + required + ` <span class="error"></span>`;
+                    element.appendChild(formInput);
+                    element.appendChild(formLabel);
+                    break;
+                case "email": // <input type="text">
+                    validation = '';
+                    if (field.required && countRow == 1) {
+                        validation = 'required';
+                    }
+                    if (field.validation) {
+                        validation += ` ${field.validation}`;
+                    }
+                    element = createElement("div");
+                    formInput = createElement("input", {
+                        type: "email",
+                        name: field.name + '_' + tableID + '_' + countRow,
+                        class: field.className,
+                        id: field.name + '_' + tableID + '_' + countRow,
+                        "data-validate": validation,
+                        "data-label": field.label,
+                        // required: field.required,
+                        "item-id": countRow,
+                    });
+                    formLabel = createElement("label", {
+                        for: field.name + '_' + tableID + '_' + countRow,
+                        class: "fs-6"
+                    });
+                    required = (field.required && countRow == 1) ? "*" : "";
+                    formLabel.innerHTML = fieldLabel + required + ` <span class="error"></span>`;
+                    element.appendChild(formInput);
+                    element.appendChild(formLabel);
+                    break;
+                case "tel": // <input type="tel">
+                    validation = '';
+                    if (field.required && countRow == 1) {
+                        validation = 'required';
+                    }
+                    if (field.validation) {
+                        validation += ` ${field.validation}`;
+                    }
+                    element = createElement("div");
+                    formInput = createElement("input", {
+                        type: "tel",
+                        name: field.name + '_' + tableID + '_' + countRow,
+                        class: field.className,
+                        id: field.name + '_' + tableID + '_' + countRow,
+                        "data-validate": validation,
+                        "data-label": field.label,
+                        // required: field.required,
+                        "item-id": countRow,
+                    });
+                    formLabel = createElement("label", {
+                        for: field.name + '_' + tableID + '_' + countRow,
+                        class: "fs-6",
+                    });
+                    required = (field.required && countRow == 1) ? "*" : "";
+                    formLabel.innerHTML = fieldLabel + required + ` <span class="error"></span>`;
+                    element.appendChild(formInput);
+                    element.appendChild(formLabel);
+                    break;
+                case "number": // <input type="number">
+                    element = createElement("div");
+                    formInput = createElement("input", {
+                        type: "number",
+                        name: field.name + '_' + tableID + '_' + countRow,
+                        class: field.className,
+                        id: field.name + '_' + tableID + '_' + countRow,
+                        // required: field.required,
+                        "item-id": countRow,
+                    });
+                    formLabel = createElement("label", {
+                        for: field.name + '_' + tableID + '_' + countRow,
+                        class: "fs-6",
+                    });
+                    required = (field.required && countRow == 1) ? "*" : "";
+                    formLabel.innerHTML = fieldLabel + required + ` <span class="error"></span>`;
+                    element.appendChild(formInput);
+                    element.appendChild(formLabel);
+                    break;
+                case "textarea": // <textarea>
+                    element = createElement("textarea", {
+                        name: field.name + '_' + tableID + '_' + countRow,
+                        class: field.className,
+                        id: field.name + '_' + tableID + '_' + countRow,
+                        // required: field.required,
+                        "item-id": countRow,
+                    });
+                    break;
+                case "select": // <select>
+                    element = createElement("div", { class: "form-group" });
+                    let select = createElement("select", {
+                        name: field.name + '_' + tableID + '_' + countRow,
+                        class: field.className,
+                        id: field.name + '_' + tableID + '_' + countRow,
+                        // required: field.required,
+                        "item-id": countRow,
+                        "data-validate": field.required ? "required " : "",
+                        "data-label": field.label,
+                    });
+
+                    field.values.forEach(option => { // <option>
+                        const optionElement = createElement("option", {
+                            value: (option.value) ? option.value : "",
+                        }, [], option.label);
+                        select.appendChild(optionElement);
+                    });
+
+                    let labelElem = createElement("label", {
+                        class: "form-check-label",
+                        for: field.name + '_' + tableID + '_' + countRow,
+                        class: "fs-6"
+                    }, [], fieldLabel + ` <span class="error"></span>`);
+
+                    element.appendChild(select);
+                    element.appendChild(labelElem);
+
+                    break;
+                case "radio-group":
+                    element = createElement("div", {
+                        class: "form-check"
+                    });
+
+                    field.values.forEach((option, tableID) => {
+                        const inputElement = createElement("input", {
+                            type: "radio",
+                            name: section.name,
+                            class: "form-check-input",
+                            id: field.name + '_' + tableID + '_' + countRow,
+                            value: option.value,
+                            "item-id": countRow,
+                        });
+
+                        const labelElement = createElement("label", {
+                            class: "form-check-label",
+                            for: field.name + '_' + tableID + '_' + countRow,
+                            class: "fs-6"
+                        }, [], option.label);
+
+                        const divElement = createElement("div", {
+                            class: "form-check"
+                        });
+
+                        divElement.appendChild(inputElement);
+                        divElement.appendChild(labelElement);
+
+                        element.appendChild(divElement);
+                    });
+                    break;
+                case "checkbox-group":
+                    element = createElement("div", {
+                        class: "form-check"
+                    });
+
+                    field.values.forEach((option, tableID) => {
+                        const inputElement = createElement("input", {
+                            type: "checkbox",
+                            name: field.name + '_' + tableID + '_' + countRow,
+                            class: "form-check-input",
+                            id: field.name + '_' + tableID + '_' + countRow,
+                            value: option.value,
+                            "item-id": countRow,
+                        });
+
+                        const labelElement = createElement("label", {
+                            class: "form-check-label",
+                            for: field.name + '_' + tableID + '_' + countRow,
+                        }, [], option.label);
+
+                        const divElement = createElement("div", {
+                            class: field.inline ? "form-check-inline" : "form-check"
+                        });
+                    });
+                    break;
+                case "date": // <input type="date">
+                    validation = 'date';
+                    if (field.required) {
+                        validation += ' required';
+                    }
+                    if (field['data-date-min']) {
+                        validation += ' date-min';
+                    }
+                    if (field['data-date-max']) {
+                        validation += ' date-max';
+                    }
+                    element = createElement("div", { class: "form-group"} );
+                    let input = createElement("input", {
+                        type: "date",
+                        name: field.name + "_" + tableID + '_' + countRow,
+                        class: field.className,
+                        id: field.name + "_" + tableID + '_' + countRow,
+                        "data-validate": validation,
+                        "data-label": field.label,
+                        "data-date-format": field['data-date-format'] || 'YYYY-MM-DD',
+                        "data-date-min": field['data-date-min'] || '',
+                        "data-date-max": field['data-date-max'] || '',
+                        "item-id": countRow,
+                        // required: field.required
+                    });
+                    let label = createElement("label", {
+                        class: "form-check-label",
+                        for: field.name + '_' + tableID + '_' + countRow,
+                        class: "fs-6"
+                    }, [], fieldLabel + ` <span class="error"></span>`);
+
+                    element.appendChild(input);
+                    element.appendChild(label);
+
+                    break;
+                default:
+                    console.error(`Unknown field type "${field.type}"`);
+                    return;
+            }
+            const td = createElement("td", {
+                class: "transaction " + field.name,
+                // id: field.name + '_' + tableID + '_' + fieldID
+            });
+            td.appendChild(element);
+            fieldsRow.appendChild(td);
+        });
+        $(`#transactions_${tableID} [item-id="${countRow}"]`).each(function (index, field) {
+            // Check for validation attribute
+            if (field.hasAttribute('data-validate')) {
+                // Attach change event handler for validation
+                field.addEventListener('change', function (e) {
+                    validateField(field);
+                });
+                if ($(field).attr('data-validate').includes('phone')) {
+                    $(field).on('keyup', formatPhone);
+                }
+            }
+        });
+
+        return { tableTBODY, fieldsRow };
+    }
+
+    claim_documentation(params) {
+        if (Boolean(params.claim_upload.documentation.required)) {
+            const documentation = params.claim_upload.documentation;
+
+            // <fieldset id="documentation">
+            const fieldset = createElement("fieldset", {
+                class: "bg-light text-dark border rounded p-3 mb-5",
+                id: "documentation"
+            }, [], "<legend>" + documentation.title + "</legend>");
+
+            const fieldsetLead = createElement("p", { class: "mb-3" }, [], documentation.body);
+            fieldset.appendChild(fieldsetLead);
+
+            // <p>Accpted file types are...</p>
+            const notice = createElement("p", {
+                class: "mb-3"
+            }, [], documentation.file_types_notice);
+            fieldset.appendChild(notice);
+
+            // <p>Please confirm in the grid below...</p>
+            const parInstructions = createElement("p", {
+                class: "text-center fw-bold mb-3"
+            }, [], documentation.instructions);
+            fieldset.appendChild(parInstructions);
+
+            // Documentation Inputs
+            const labelFileUpload = createElement("label", {
+                for: "file-upload"
+            }, [], `${documentation.label_file_upload}: <span class=\"error\"></span><span class=\"warning\"></span>`);
+            const inputFileUpload = createElement("input", {
+                type: "file",
+                id: "file-upload",
+                class: "form-control mb-3",
+                name: "file-upload",
+                "data-input": documentation.data_input,
+                "data-validate": documentation.data_validate,
+                "data-file-size": documentation.data_file_size,
+                "data-file-type": documentation.data_file_type,
+                "accept": documentation.accept,
+            });
+            const inputFileHash = createElement("input", {
+                type: "hidden",
+                id: "file-hash"
+            });
+            const groupFileUpload = createElement("div", {
+                class: "mb-3"
+            }, [labelFileUpload, inputFileUpload, inputFileHash]);
+            fieldset.appendChild(groupFileUpload);
+
+            const labelFileDesc = createElement("label", {
+                for: "file-description"
+            }, [], `${documentation.label_file_desc}: <span class="error"></span>`);
+            const inputFileDescText = createElement("input", {
+                type: "text",
+                class: "form-control",
+                id: "file-description",
+                name: "file-description",
+            });
+            const inputFileDescBtn = createElement("input", {
+                type: "button",
+                class: "btn btn-outline-primary",
+                id: "file-add",
+                value: "Add File"
+            });
+            const inputGroup = createElement("div", {
+                class: "input-group input-group-lg mb-3"
+            }, [inputFileDescText, inputFileDescBtn]);
+            const groupFileDesc = createElement("div", {
+                id: "groupFileDesc"
+            }, [labelFileDesc, inputGroup]);
+            fieldset.appendChild(groupFileDesc);
+
+            const fileListPar = createElement("p", {
+                id: "fileList"
+            }, [], `<strong>File List:</strong> <span id="no-files">No Files Selected</span>`);
+
+            const fileOrderedList = createElement("ol", {
+                class: "d-none",
+                id: "file-list"
+            });
+            const fileListElem = createElement("div", {
+                id: "fileListElem"
+            }, [fileListPar, fileOrderedList]);
+            fieldset.appendChild(fileListElem);
+
+            return fieldset;
+        }
+    }
+
+    claim_payment_method(params) {
+        const fieldset = createElement("fieldset", {
+            class: "bg-light text-dark border rounded p-3 mb-5",
+        }, [
+            createElement("legend", [], [], params.form_options.claim_form.payment_widget.title),
+            createElement("p", { class: "fw-bold text-center text-danger" }, [], i18n[userLanguage].payment_select_email_disclaimer),
+            createElement("p", {
+                class: "d-none text-center",
+                id: "update_payment_message"
+            }, [], i18n[userLanguage].payment_update_message),
+            createElement("div", {
+                id: "dst-payment",
+                "key": appPayMethod,
+            }),
+            createElement("script", {
+                type: "text/javascript",
+            }, [], `
+              dstPaymentForm(document.getElementById('dst-payment'),
+                {
+                  verify: false,
+                  onSubmitted: function (info) { 
+                    document.getElementById('payment_method').value = info.method; 
+                    document.getElementById('payment_token').value = info.token; 
+                    if (info.paymentEmail) {
+                        document.getElementById('payment_email').value = info.paymentEmail; 
+                    }
+                    if (info.paymentPhone) {
+                        document.getElementById('payment_phone').value = info.paymentPhone; 
+                    }
+                  }
+                }
+              )
+            `),
+        ]);
+
+        return fieldset;
+    }
+
+    claim_certification(params) {
+
+        const today = new Date().toLocaleString();
+        const _ag_uuid = document.cookie.split("; ").find((row) => row.startsWith("_ag_UUID="))?.split("=")[1];
+        const _ag_referrer = document.cookie.split("; ").find((row) => row.startsWith("_ag_URL="))?.split("=")[1];
+
+        const fieldset = createElement("fieldset", {
+            class: "bg-light text-dark border rounded p-3 mb-5",
+            id: "certification",
+        }, [
+            createElement("legend", { class: "mb-3", }, [], params.certification.attestation.title),
+            createElement("p", { class: "mb-3", }, [], params.certification.attestation.body),
+            createElement("div", { class: "row", }, [
+                createElement("div", { class: "col-md-5" }, [
+                    createElement("input", { 
+                        type: "text", 
+                        name: "signature", 
+                        class: "form-control", 
+                        id: "signature", 
+                        "data-validate": "required", 
+                        "data-contact-label": "Signature", 
+                        placeholder: i18n[userLanguage].signature_placholder,
+                    }),
+                    createElement("label", { for: "signature", }, [], `${i18n[userLanguage].signature} *<span class="error"></span>`),
+                ]),
+                createElement("div", { class: "col-md-5" }, [
+                    createElement("input", { type: "text", name: "date", class: "form-control", id: "date", "data-validate": "required", "data-contact-label": "Date", disabled: "disabled", value: today, }),
+                    createElement("label", { for: "date", }, [], `${i18n[userLanguage].date} <span class="error"></span>`),
+                ]),
+                createElement("div", { class: "col-md-2" }, [
+                    createElement("div", {
+                        class: "d-grid",
+                    }, [
+                        createElement("input", { type: "hidden", id: "site_id", value: reCAPTCHAv3, }),
+                        createElement("input", { type: "hidden", name: "ag_UUID", id: "ag_UUID", value: _ag_uuid, }),
+                        createElement("input", { type: "hidden", name: "referer_url", id: "referer_url", value: _ag_referrer, }),
+                        createElement("input", { type: "hidden", name: "user_language", id: "user_language", value: userLanguage, }),
+                        createElement("input", {
+                            type: "submit",
+                            class: "btn btn-primary",
+                            id: "submit-claim",
+                            value: i18n[userLanguage].submit_btn,
+                        })
+                    ]),
+                ]),
+            ]),
+        ]);
+        return fieldset;
+    }
+
+    claim_confirmation(params) {
+        const confirmation = createElement("div", {
+            class: "bg-light text-dark border rounded p-3 mb-3",
+            id: "confirmation",
+        }, [
+            createElement("h3", { class: "text-center mb-3" }, [], params.confirmation.title),
+            createElement("h4", { class: "alert alert-success text-center mb-3" }, [], i18n[userLanguage].confirmation_this_is_a_copy),
+            createElement("p", { class: "text-center text-danger mb-3" }, [], params.confirmation.upload_fail),
+            createElement("p", { class: "text-center fw-bold mb-3" }, [], params.confirmation.print_note),
+            createElement("h4", { class: "text-center fw-bold mb-3" }, [], params.confirmation.claim_details.title),
+            createElement("div", {
+                class: "row mb-3"
+            }, [
+                createElement("div", { class: "col-6 text-end fw-bold" }, [], 'Correlation ID'),
+                createElement("div", { class: "col-6", id: "confirmation_correlation_id" }, [], params.confirmation.claim_details.correlation_id),
+            ]),
+            createElement("p", { class: "text-center fw-bold mb-3" }, [], params.confirmation.claim_details.body),
+            this.confirmation_claim_member(params),
+            this.confirmation_claim_fields(params),
+            this.confirmation_claim_transactions(params),
+            createElement("p", { class: "text-center mb-3" }, [], params.confirmation.claim_details.footer),
+            createElement("p", { class: "text-center mb-3" }, [], params.confirmation.claim_details.edit),
+        ]);
+        return confirmation;
+    }
+
+    exclusion_confirmation(params) {
+        const confirmation = createElement("div", {
+            class: "bg-light text-dark border rounded p-3 mb-3", // TODO: add d-none
+            id: "confirmation",
+        }, [
+            createElement("h3", { class: "text-center mb-3" }, [], params.confirmation.title),
+            createElement("p", { class: "text-center text-danger mb-3" }, [], params.confirmation.upload_fail), // TODO: add d-none
+            createElement("p", { class: "text-center fw-bold mb-3" }, [], params.confirmation.print_note),
+            createElement("h4", { class: "text-center fw-bold mb-3" }, [], params.confirmation.claim_details.title),
+            createElement("p", { class: "text-center fw-bold mb-3" }, [], params.confirmation.claim_details.body),
+            this.confirmation_claim_member(params),
+            this.confirmation_claim_fields(params),
+            this.confirmation_claim_transactions(params),
+            createElement("p", { class: "text-center mb-3" }, [], params.confirmation.claim_details.footer),
+            createElement("p", { class: "text-center mb-3" }, [], params.confirmation.claim_details.edit),
+        ]);
+        return confirmation;
+    }
+
+    confirmation_claim_member(params) {
+        const fields = params.contact;
+        const fieldsContainer = createElement("div", { class: "mb-3", id: "confirmation_claim_member" });
+        Object.keys(fields).forEach(key => {
+            if (fields[key] && $(`#${key}`).attr('data-contact-label')) {
+                const row = createElement("div", {
+                    class: "row mb-3 pb-3 border-bottom"
+                }, [
+                    createElement("div", { class: "col fw-bold text-end" }, [], $(`#${key}`).attr('data-contact-label')),
+                    createElement("div", { class: "col" }, [], fields[key]),
+                ]);
+                fieldsContainer.appendChild(row);
+            }
+        });
+        return fieldsContainer;
+    }
+
+    confirmation_claim_fields(params) {
+        const fields = params.fields;
+        const fieldsContainer = createElement("div", { class: "mb-3", id: "confirmation_claim_fields" });
+        Object.keys(fields).forEach(key => {
+            let fieldLabel;
+            if (typeof translateFieldNames !== 'undefined' && translateFieldNames[userLanguage]) {
+                fieldLabel = translateFieldNames[userLanguage][key];
+            } else {
+                fieldLabel = key;
+            }
+            if (!params.confirmation.claim_details.excluded_keys.includes(key)) {
+                if (fields[key]) {
+                    const row = createElement("div", {
+                        class: "row mb-3 pb-3 border-bottom"
+                    }, [
+                        createElement("div", { class: "col fw-bold text-end" }, [], fieldLabel),
+                        createElement("div", { class: "col" }, [], fields[key]),
+                    ]);
+                    fieldsContainer.appendChild(row);
+                }
+            }
+        });
+        return fieldsContainer;
+    }
+
+    confirmation_claim_transactions(params) {
+        const transactions = params.transactions;
+        const fieldsContainer = createElement("div", { class: "mb-3", id: "confirmation_claim_transactions" });
+        Object.keys(transactions).forEach(index => {
+            Object.keys(transactions[index]).forEach(key => {
+                let fieldLabel;
+                if (typeof translateFieldNames !== 'undefined' && translateFieldNames[userLanguage]) {
+                    fieldLabel = translateFieldNames[userLanguage][key];
+                } else {
+                    fieldLabel = key;
+                }
+                if (transactions[index][key]) {
+                    const row = createElement("div", {
+                        class: "row mb-3 pb-3 border-bottom"
+                    }, [
+                        createElement("div", { class: "col fw-bold text-end" }, [], `${fieldLabel} ${index}`),
+                        createElement("div", { class: "col" }, [], transactions[index][key]),
+                    ]);
+                    fieldsContainer.appendChild(row);
+                }
+            });
+        })
+        return fieldsContainer;
+    }
+
+    confirmation_tr_cols(params) {
+        const row = createElement("tr");
+        params.columns.forEach(column => {
+            const th = createElement("th", {}, [], column.title);
+            row.appendChild(th);
+        })
+        return row;
+    }
+
+    claim_message_center() {
+        return createElement("div", {
+            id: "messageContainer"
+        }, [
+            createElement("div", { class: "d-none", id: "message1", }),
+            createElement("div", { class: "d-none", id: "message2", }),
+        ]);
+    }
+
+    claim_confirmation_email(params) {
+        let email = {
+            domain: params.domain,
+            zero_zero_id: params.zero_zero_id,
+            confirmation_code: params.confirmation_code,
+            claim_id: params.claim_id
+        };
+        this.claim.api.claimsEmailPost({}, email);
+    }
+
+    result_data_error(result, userLanguage) {
+
+        let deadline_notice = result.data.error;
+        let claim_text = `The deadline to submit a Claim has passed.`;
+        let exclude_text = `The deadline to submit an exclusion has passed.`;
+
+        if (deadline_notice === claim_text) {
+            result.data.error = i18n[userLanguage].deadline_claim;
+        }
+
+        if (deadline_notice === exclude_text) {
+            result.data.error = i18n[userLanguage].deadline_exclude;
+        }
+
+        const div = createElement("div", {
+            class: "text-center text-danger fw-bold fs-4 py-4",
+            "aria-label": result.data.error,
+        }, [], `${result.data.error} <br> ${i18n[userLanguage].return_to_home}`);
+
+        loadingGif(loading, "hide", 250);
+
+        outputDiv.innerHTML = ``;
+        outputDiv.appendChild(div);
+    }
+}
+
+class Cookies {
+    constructor(params, addParams, duration = cookieDuration) {
+        this.params = params;
+        this.addParams = addParams;
+        this.duration = duration;
+    }
+
+    init() {
+        // Check if cookies are enabled in the browser.
+        if (navigator.cookieEnabled) {
+            this.uuid();
+            this.referrer();
+            this.language();
+        } else {
+            console.log('Cookies are not enabled in your browser.');
+        }
+    }
+
+    uuid() {
+        let uuid = this.getCookie('uuid');
+
+        if (!uuid) {
+            uuid = this.generateUUID();
+            this.setCookie('_ag_UUID', uuid, this.duration);
+        }
+
+        return uuid;
+    }
+
+    referrer() {
+        const referrer = document.referrer;
+        if (referrer) {
+            document.cookie = `_ag_URL=${referrer}; path=/`;
+            // setCookie("_ag_URL", document.referrer, this.duration);
+        }
+        return null;
+    }
+
+    _validateLanguage(language) {
+        const validLanguages = Object.keys(i18n);
+        return validLanguages.includes(language);
+    }
+
+    language() {
+        const urlParams = new URLSearchParams(window.location.search);
+        let language = urlParams.get('language');
+        let cookieLanguage = this.getCookie('_ag_Lang');
+
+        if (!language && !cookieLanguage) {
+            language = "en";
+        } else if (!language && this._validateLanguage(cookieLanguage)) {
+            language = cookieLanguage;
+        } else if (this._validateLanguage(language)) {
+            // Set the language cookie for future use.
+            this.setCookie('_ag_Lang', language, 365);
+        } else {
+            language = "en";
+        }
+        return language;
+    }
+
+    locale() {
+        return i18n[userLanguage].locale;
+    }
+
+    generateUUID() {
+        let array = new Uint8Array(16);
+        window.crypto.getRandomValues(array);
+        let hex = "";
+        for (let i = 0; i < array.length; i++) {
+            hex += (array[i] >>> 4).toString(16);
+            hex += (array[i] & 0x0f).toString(16);
+        }
+        return hex;
+    }
+
+    setCookie(name, value, days) {
+        let expires = '';
+        if (days) {
+            const date = new Date();
+            date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+            expires = '; expires=' + date.toGMTString();
+        }
+        document.cookie = name + '=' + value + expires + '; path=/';
+    }
+
+    getCookie(name) {
+        const nameEQ = name + '=';
+        const ca = document.cookie.split(';');
+        for (let i = 0; i < ca.length; i++) {
+            let c = ca[i];
+            while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+            if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+        }
+        return null;
+    }
+}
+
+class FaqContactForm {
+    constructor() {
+        this.sitePages = siteInfoLang.Pages;
+        this.domainSlug = window.location.hash.substring(1);
+        this.domainFaqSlug = 'faqs';
+        this.importantDates = null;
+        this.faqPage = this.sitePages.find(page => this.domainFaqSlug === page.PageName);
+        this.faq = {};
+    }
+
+    init() {
+
+        this.faqPage.PageContent.forEach(({ SectionTitle: title, SectionLead: lead, SectionFAQs: sectionFaqs}) => {
+
+            const titleString = title;
+
+            const regex = /--[\w-]+/g; 
+            const matches = titleString.match(regex); 
+            
+            const strippedMatches = matches ? matches.map(match => match.substring(2)) : null;
+
+            if (Boolean(strippedMatches) && !strippedMatches.includes(this.domainSlug)) return;
+
+            const titleSlice = titleString.search(matches);
+
+            const Title = matches ? titleString.slice(0,titleSlice): titleString;
+
+            const sectionTitle = toTitleCase(Title)
+            if (!this.faq.hasOwnProperty(sectionTitle)) {
+                this.faq[sectionTitle] = {};
+            }
+            sectionFaqs.forEach(faqItem => {
+                this.faq[sectionTitle][faqItem.Question] = faqItem.Answer
+            })
+        });
+    }
+
+    makeFirstContactDropDown() {
+        const faqCategories = Object.keys(this.faq);
+        const firstContactDropDown = createElement("div", { class: "form-group" }, [
+            createElement("p", {
+                class: "alert alert-info text-dark text-center fw-semibold",
+            }, [], i18n[userLanguage].chatbot.for_fastest_response),
+            createElement("label", { for: "contactCategory" }, [], i18n[userLanguage].contact_us_category),
+            createElement("select", { class: "form-select", id: "contactCategory", required: true, onchange: "filterFaq(this)" }, [
+                createElement("option", { value: "" }, [], i18n[userLanguage].contact_us_select_a_reason),
+                ...faqCategories.map(category => createElement("option", { value: category }, [], category)),
+            ]),
+        ]);
+        return firstContactDropDown;
+    }
+}

@@ -1,0 +1,175 @@
+/**
+ * Loading GIF
+ */
+loadingGif(loading, "show");
+
+/**
+ * Cookies
+ * @returns {void}
+ */
+const set_cookies = new Cookies();
+set_cookies.init();
+
+const userLanguage = set_cookies.language();
+const appLocale = set_cookies.locale();
+document.documentElement.lang = set_cookies.locale();
+
+
+/**
+ * @type {string} emailConfirm - The email address for confirmation messages.
+ * @type {string} emailInform - The email address for informational messages.
+ * @type {string} phoneAdmin - The phone number for administrative contact.
+ * @type {object} siteInfo - The object containing information about the settlement website.
+ * @property {string[]} lang - An array of language codes supported by the site.
+ */
+var emailConfirm, emailInform, phoneAdmin, siteInfo, siteInfoLang;
+
+/**
+ * Analytics
+ * @source https://scalar.usc.edu/works/guide2/adding-google-analytics-tracking
+*/
+function analytics(params) {
+  gtag();
+  pixels();
+  jsb_media();
+  // window.addEventListener('load', () => {});
+}
+
+/**
+ * Fetches domain API data and updates the website with the retrieved data.
+ * Updates site title, site name, case number, court name, and builds navigation
+ * based on the fetched data. Also adds event listener for hash changes to
+ * update page content accordingly.
+ *
+ * @example
+ * // Assuming that appDocketAPI and appLang are defined and valid
+ * fetch(appDocketAPI)
+ * .then(response => response.json())
+ * .then(data => { ... })
+ * .catch(error => console.error(error));
+ */
+fetch(appDocketAPI)
+  .then(response => response.json())
+  .then(data => {
+
+    siteInfo = data.findResult;
+    siteInfoLang = data.findResult.lang[userLanguage];
+
+    emailConfirm = siteInfo.email_conf;
+    emailInform = siteInfo.email_info;
+    phoneAdmin = siteInfo.phone;
+
+    document.title = siteInfoLang.SiteTitle;
+
+    let domainSlug = window.location.hash.substring(1);
+    let sitePages = siteInfoLang.Pages;
+
+    const header = new Header(siteInfoLang.SiteName, siteInfoLang.CaseNumber, siteInfoLang.CourtName);
+    const navigation = new Navigation(sitePages, domainSlug);
+    const footer = new Footer();
+    const importantDates = new ImportantDates(data);
+
+    const headerElem = document.querySelector('header');
+    headerElem.classList.add("py-3");
+    headerElem.appendChild(header.createHeader());
+
+    navigation.hashChange(sitePages, domainSlug, importantDates);
+
+    document.querySelector("header").insertAdjacentHTML('afterend', navigation.element.outerHTML);
+    document.querySelector("footer").appendChild(footer.element);
+
+    getPage(sitePages, domainSlug, importantDates);
+  })
+  .catch(error => console.error(error));
+
+/**
+ * Calls the appropriate function to display page content based on the given domainSlug.
+ * If domainSlug is empty, the 'home' case will be executed.
+ *
+ * @param {Array} sitePages - An array containing the website sitePages' information.
+ * @param {string} domainSlug - The unique identifier (slug) of the page to be displayed.
+ *
+ * @example
+ * // Assuming sitePages array and domainSlug are defined and valid
+ * getPage(sitePages, domainSlug, importantDates);
+ */
+function getPage(sitePages, domainSlug, importantDates) {
+  loadingGif(loading, "show");
+  // Set domainSlug to 'home' if empty
+  (domainSlug === '') ? siteTitle(sitePages) : siteTitle(sitePages, domainSlug);
+
+  // Misc handling.
+  domainSlug = domainSlug || 'home';
+  let search;
+  if (domainSlug.includes('?')) {
+    search = domainSlug.split('?')[1];
+    domainSlug = domainSlug.split('?')[0];
+  }
+
+  const page = new Page(sitePages, domainSlug, importantDates);
+  switch (domainSlug) {
+
+    case 'home':
+      page.home();
+      break;
+
+    case 'submit-claim':
+      const submit_claim = new SubmitClaim(appClaimForm, userLanguage);
+      submit_claim.form();
+
+      analytics();
+      break;
+
+    case 'opt-out':
+      const opt_out = new OptOut(appClaimForm, userLanguage);
+      opt_out.form();
+      analytics();
+      break;
+
+    case 'important-documents':
+      page.important_documents();
+      break;
+
+    case 'faqs':
+      page.faqs();
+      break;
+
+    case 'contact-us':
+    case 'contact':
+      page.contact(makeStandardContactPage, userLanguage);
+      break;
+
+    case 'media':
+      page.media();
+      break;
+
+    default:
+      page.error();
+  }
+
+  if (search) {
+    let id = search.split('=');
+    if ($(`#${id[1]}`).length) {
+      $('html,body').animate({
+        scrollTop: $(`#${id[1]}`).offset().top
+      }, 'slow');
+      if ($(`#${id[1]}`).hasClass('accordion-header')) {
+        $(`#${id[1]} button`).click();
+      }
+    }
+  }
+}
+
+/**
+ * Sets the title of the webpage based on the current page and site information.
+ *
+ * @param {Array} sitePages - An array of page objects, each containing a PageName and PageTitle property.
+ * @param {string} [domainSlug='home'] - The domainSlug of the current page, defaults to 'home'.
+ */
+function siteTitle(sitePages, domainSlug = 'home') {
+  sitePages.forEach(page => {
+    if (domainSlug !== page.PageName) return;
+    document.title = page.PageTitle.split('--')[0] + ' - ' + siteInfoLang.SiteTitle;
+  });
+}
+

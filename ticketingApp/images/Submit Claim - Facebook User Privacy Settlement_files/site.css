@@ -1,0 +1,355 @@
+/**
+ * Global Variables
+ */
+:root {
+   --black: #000000;
+   --blue: #00457d;
+   --green: #18bc9c;
+   --lightblue: #3c8ac9; 
+   --white: #ffffff;
+   --red: #cc0000;
+   --gray: #00000026;
+
+   --bs-blue: #00457d;
+   --bs-indigo: #7D0C6F;
+   --bs-purple: #7D0C6F;
+   --bs-pink: #d63384;
+   --bs-red: #dc3545;
+   --bs-orange: #fd7e14;
+   --bs-yellow: #ffc107;
+   --bs-green: #198754;
+   --bs-teal: #20c997;
+   --bs-cyan: #0dcaf0;
+   --bs-black: #000;
+   --bs-white: #fff;
+   --bs-gray: #6c757d;
+   --bs-gray-dark: #343a40;
+   --bs-gray-100: #f8f9fa;
+   --bs-gray-200: #e9ecef;
+   --bs-gray-300: #dee2e6;
+   --bs-gray-400: #ced4da;
+   --bs-gray-500: #adb5bd;
+   --bs-gray-600: #6c757d;
+   --bs-gray-700: #495057;
+   --bs-gray-800: #343a40;
+   --bs-gray-900: #212529;
+   --bs-primary: #00457d;
+   --bs-secondary: #6c757d;
+   --bs-success: #198754;
+   --bs-info: #0dcaf0;
+   --bs-warning: #ffc107;
+   --bs-danger: #dc3545;
+   --bs-light: #f8f9fa;
+   --bs-dark: #212529;
+}
+::-moz-selection { /* Code for Firefox */
+   color: var(--white);
+   background: var(--lightblue);
+}
+::selection {
+   color: var(--white);
+   background: var(--lightblue);
+}
+
+/**
+ * Body
+ */
+body {
+   font-size: 18px;
+}
+
+/**
+ * Links
+ */
+ main a,
+ #update_payment_toggle {
+    color: #128f76;
+    text-decoration: underline;
+ }
+ 
+ main a:hover,
+ #update_payment_toggle:hover {
+    color: #128f76;
+    text-decoration: underline;
+ }
+ 
+ #update_payment_toggle {
+    font-weight: bold;
+    cursor: pointer;
+ }
+
+#important-documents main a {
+   color: var(--black);
+   text-decoration: none;
+}
+#important-documents main a:hover {
+   color: var(--black);
+   text-decoration: underline;
+}
+
+footer a {
+   color: var(--green);
+   text-decoration: none;
+}
+footer a:hover {
+   color: var(--green);
+   text-decoration: underline;
+}
+
+/**
+ * Header
+ */
+header {
+   background-color: var(--blue);
+   color: var(--white);
+}
+header .fs-1 {
+   font-family: 'Oswald', Arial, sans-serif;
+}
+
+/**
+ * Footer
+ */
+footer {
+   color: var(--white);
+   font-size: .8em;
+}
+
+/**
+ * Important Dates
+ */
+#home-page #imptDatesCard h6.card-subtitle {
+   float: left!important;
+   margin-top: 2px!important;
+   margin-right: 8px!important;
+}
+#home-page #imptDatesCard h6.card-subtitle::after {
+   content: '—'!important;
+   margin-left: 8px!important;
+}
+#home-page #imptDatesCard .impDatesCust {
+   border-left: 3px solid #eee;
+   padding-bottom: 0.5rem;
+   padding-left: 1rem;
+   padding-top: 0.5rem;
+}
+
+/**
+ * Accordian Style
+ */
+.accordion-button:not(.collapsed) {
+   color: var(--black);
+   background-color: rgba(var(--bs-light-rgb),var(--bs-bg-opacity))!important;
+   font-weight: bold;
+}
+.accordion-item {
+   border: 0;
+}
+.accordion-button::after {
+   display: none;
+}
+
+button.faqs-btn.accordion-button.collapsed {
+   font-size: 1.1rem;
+}
+
+/**
+ * Button Colors
+ */
+.btn-primary {
+   background-color: var(--blue);
+   border-color: var(--blue);
+}
+.btn-outline-primary {
+   color: var(--blue);
+   border-color: var(--blue);
+}
+.btn-check:active+.btn-outline-primary, 
+.btn-check:checked+.btn-outline-primary, 
+.btn-outline-primary.active, 
+.btn-outline-primary.dropdown-toggle.show, 
+.btn-outline-primary:active {
+   color: var(--white);
+   background-color: var(--blue);
+   border-color: var(--blue);
+}
+.btn-primary:hover,
+.btn-check:hover+.btn-outline-primary, 
+.btn-outline-primary.active:hover, 
+.btn-outline-primary:hover {
+   background: var(--lightblue);
+}
+
+/**
+ * Container
+ */
+.container {
+   max-width: 1124px;
+}
+
+/**
+ * Error 
+ */
+span.error {
+   color: var(--red);
+   font-weight: bold;
+   margin-left: .2em;
+}
+
+#submit-claim #message1, 
+#submit-claim #message2,
+#opt-out #message {
+   color: var(--red);
+   font-size: 1.5em;
+   font-weight: 600;
+   text-align: center;
+}
+
+#confirmation-email-alert { 
+   font-size: 1rem;
+   word-break: break-word !important;
+}
+
+/**
+ * Supporting Documentation - Submit Claim Form
+ */
+ol#file-list li {
+   border-bottom: 1px solid #ccc;
+   padding: 8px 0;
+}
+ol#file-list li span.float-right {
+   float: right;
+}
+ol#file-list li span.filename {
+   margin-right: 16px;
+}
+
+/**
+ * Form Control
+ */
+.form-control {
+   color: var(--black);
+   border: 1px solid #7a7d81;
+}
+
+/**
+ * Lead Paragraphs
+ */
+.lead {
+   font-weight: 600;
+}
+
+/**
+ * List Group
+ */
+.list-group-item {
+   border: 0;
+}
+
+#loading {
+   background-color: var(--white);
+   background-image: url(https://angeion-public.s3.amazonaws.com/img/loading.gif);
+   background-position: center 20%;
+   background-repeat: no-repeat;
+   background-size: 200px;
+   height: 100%;
+   opacity: 0;
+   position: fixed;
+   top: 0;
+   visibility: hidden;
+   width: 100%;
+}
+
+#loading.show {
+   opacity: 0.8;
+   transition: opacity 0.2s ease-in;
+   visibility: visible;
+}
+
+/**
+ * Navigation
+ */
+.nav-pills .nav-link.active, 
+.nav-pills .show>.nav-link  {
+   background-color: var(--blue)!important;
+   color: var(--white)!important;
+}
+.navbar-light .navbar-nav .nav-link,
+.navbar-light .navbar-nav .nav-link:hover,
+.nav-link,
+.nav-link:hover {
+   color: var(--blue);
+   font-weight: 600;
+}
+.navbar .btn-success {
+   color: var(--white);
+}
+
+button.navbar-toggler {
+   font-size: 18px;
+   font-weight: 600;
+   background: #0062cc;
+   color: var(--white);
+   padding: 0.5rem 1rem;
+   border-radius: 0.5rem;
+   line-height: 1.5;
+}
+
+button.navbar-toggler:active {
+   background-color: var(--blue);
+}
+
+#subClaimBtn {
+   color: var(--white);
+   background: #128f76;
+   font-size: 18px;
+   font-weight: 600;
+   display:none;
+}
+
+/**
+ * Confirmation Table
+ */
+table#details tbody tr td:first-child,
+table#signature tbody tr td:first-child {
+   width: 50%;
+}
+
+/**
+ * Options Table
+ */
+table.options {
+   border-color: var(--black);
+}
+table.options thead tr th {
+   background-color: var(--gray);
+}
+table.options th {
+   color: var(--blue)!important;
+}
+
+/**
+ * Text
+ */
+.text-primary {
+   color: var(--blue)!important;
+}
+
+/**
+ * Media Breaks
+ */
+
+@media ( max-width: 992px ) {
+   .navbar-nav {
+      margin-top: 0.5rem;
+   }
+   #subClaimBtn {
+      display: block;
+   }
+}
+
+/**
+@media (prefers-color-scheme:dark) {
+
+}
+ */

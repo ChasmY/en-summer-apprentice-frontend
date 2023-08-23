@@ -1,0 +1,57 @@
+class Validate extends Claim {
+    constructor(data, lang, config, claim, exclusion) {
+        super(data, lang, config, claim, exclusion)
+    }
+
+    listeners(claim) {
+
+        const reside = document.getElementById("select_field_us_reside_0");
+        const user = document.getElementById("select_field_fb_user_1");
+
+        reside.addEventListener("change", () => {
+            if (reside.value === "NO") {
+                modal(i18n[userLanguage].notice, i18n[userLanguage].not_eligible_submit_claim);
+            }
+        });
+
+        user.addEventListener("change", () => {
+            if (user.value === "NO") {
+                modal(i18n[userLanguage].notice, i18n[userLanguage].not_eligible_submit_claim);
+            }
+        });
+
+        activeDeletedQuestion();
+
+        const error = {
+            en: "Start date must be before end date.",
+            es: "La fecha de inicio debe ser anterior a la fecha de finalización."
+        }
+
+        const date_start = document.querySelectorAll('input[data-label^="Start Date"]');
+        date_start.forEach((element) => {
+            element.addEventListener("change", () => {
+                const start_value = new Date(element.value);
+                const end_value = new Date(document.querySelector(`input[data-label="${element.dataset.label.replace("Start", "End")}"]`).value);
+                if (start_value.getTime() > end_value.getTime()) {
+                    modal(i18n[userLanguage].error, error[userLanguage]);
+                    element.value = "";
+                    // document.querySelector(`input[data-label="${element.dataset.label.replace("Start")}"]`).value = "";
+                }
+            })
+        })
+
+        const date_end = document.querySelectorAll('input[data-label^="End Date"]');
+        date_end.forEach((element) => {
+            element.addEventListener("blur", () => {
+                const end_value = new Date(element.value);
+                const start_value = new Date(document.querySelector(`input[data-label="${element.dataset.label.replace("End", "Start")}"]`).value);
+                if (start_value.getTime() > end_value.getTime()) {
+                    modal(i18n[userLanguage].error, error[userLanguage]);
+                    element.value = "";
+                    // document.querySelector(`input[data-label="${element.dataset.label.replace("End")}"]`).value = "";
+                }
+            })
+        })
+    }
+}
+

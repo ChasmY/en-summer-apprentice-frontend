@@ -1,0 +1,1132 @@
+/**
+ * createElement()
+ * 
+ * Creates an HTML element with the specified attributes and children.
+ *
+ * @param {string} tag - The tag name of the element to create.
+ * @param {Object} [attributes={}] - An object containing key-value pairs of attributes to set on the created element.
+ * @param {Array} [children=[]] - An array of child elements or text to append to the created element.
+ * @param {string} [html=''] - A string of HTML content to set as the innerHTML of the created element.
+ * @returns {HTMLElement} The created HTML element with the specified attributes, children, and innerHTML.
+ */
+function createElement(tag, attributes = {}, children = [], html = '') {
+    const element = document.createElement(tag);
+    for (const [key, value] of Object.entries(attributes)) {
+        element.setAttribute(key, value);
+    }
+    children.forEach(child => element.append(child));
+    if (html) {
+        element.innerHTML = html;
+    }
+    return element;
+}
+
+/**
+ * loadingGif()
+ * 
+ * Shows or hides a loading GIF element.
+ * 
+ * @param {Element} element - The DOM element to show/hide the loading GIF.
+ * @param {string} [action='show'] - The action to perform. Either "show" or "hide".
+ * @param {number} [timeout=250] - The time in milliseconds to wait before hiding the loading GIF.
+ * @returns {void}
+ */
+function loadingGif(element, action = 'show', timeout = 250) {
+    if (!element instanceof Element) {
+        console.log(`Error: ${element} is not a valid DOM element.`);
+        return;
+    }
+    if (action === 'show') {
+        element.classList.add('show');
+    } else if (action === 'hide') {
+        setTimeout(() => {
+            element.classList.remove('show');
+        }, timeout);
+    } else {
+        console.log(`Error: ${action} is not a valid action.`);
+    }
+}
+
+/**
+ * Creates a new element with the specified CSS class selectors, ID, and attributes.
+ * 
+ * NOTE: Use `function createElement()` instead.
+ */
+function elem(param, selector = [], id, attr = []) {
+    if (!param) return;
+    const elem = document.createElement(param);
+    selector.forEach(item => elem.classList.add(item));
+    if (id !== undefined) elem.id = id;
+    attr.forEach(obj => {
+        Object.keys(obj).forEach(key => {
+            elem.setAttribute(key, obj[key]);
+        });
+    });
+    return elem;
+}
+
+/**
+ * Sets a language cookie with the given language.
+ * 
+ * @param {string} language - The language to set the cookie to.
+ * @returns {void}
+ */
+function setLanguageCookie(language) {
+    document.cookie = `language=${language}; expires=${new Date(Date.now() + 2592000000).toUTCString()}; path=/; domain=${window.location.hostname}`;
+}
+
+/**
+ * Active class selector
+ * 
+ * Adds or removes the "active" class from Navigation links based on the 
+ * current URL hash.
+ * 
+ * @param {string} params - The URL hash to match against the Navigation links.
+ * @returns {void}
+ */
+function isPageActive(params) {
+    const navLinks = document.querySelectorAll('.nav-link');
+    navLinks.forEach(link => {
+        const href = link.getAttribute('href').substring(1);
+
+        if (params === href) {
+            link.classList.add('active');
+        } else {
+            link.classList.remove('active');
+        }
+    });
+}
+
+/**
+ * Remove Special Chars
+ * 
+ * Remove specified special characters from a JSON string.
+ * 
+ * @param {Object} obj - The input object to convert to JSON and filter.
+ * @param {string[]} chars - An array of special characters to remove.
+ * @returns {string} - The filtered JSON string.
+ */
+function stripSpecialChars(obj, chars = []) {
+    const regex = new RegExp(`[${chars.join("\\")}]`, "g");
+    const jsonString = JSON.stringify(obj, null, 2);
+    return jsonString.replace(regex, "");
+}
+
+/**
+ * Timezones
+ * 
+ * Returns the timezone name associated with a given abbreviation.
+ * 
+ * @param {string} abbreviation - The abbreviation of the timezone to retrieve.
+ * @throws {Error} If an invalid timezone abbreviation is provided.
+ * @returns {string} The name of the timezone associated with the abbreviation.
+ */
+function getTZ(abbreviation) {
+    switch (abbreviation) {
+        case "EST":
+            return "America/New_York";
+        case "CST":
+            return "America/Chicago";
+        case "MST":
+            return "America/Denver";
+        case "PST":
+            return "America/Los_Angeles";
+        case "AKST":
+            return "America/Anchorage";
+        case "HST":
+            return "Pacific/Honolulu";
+        default:
+            throw new Error("Invalid timezone abbreviation: " + abbreviation);
+    }
+}
+
+/**
+ * Generate UUID
+ * 
+ * Generates a random UUID (Universally Unique Identifier) using the 
+ * window.crypto.getRandomValues method.
+ * 
+ * @returns {string} - A randomly generated UUID in hexadecimal format.
+ */
+function generateUUID() {
+    let array = new Uint8Array(16);
+    window.crypto.getRandomValues(array);
+    let hex = "";
+    for (let i = 0; i < array.length; i++) {
+        hex += (array[i] >>> 4).toString(16);
+        hex += (array[i] & 0x0f).toString(16);
+    }
+    return hex;
+}
+
+/**
+ * setCookie
+ * 
+ * Sets a cookie with the specified name and value.
+ * 
+ * @param {string} name - The name of the cookie to set.
+ * @param {string} value - The value to set for the cookie.
+ * @param {number} [days] - Optional. The number of days until the cookie 
+ *                          expires. If not specified, the cookie will expire 
+ *                          when the user closes the browser.
+ * @returns {void}
+ */
+function setCookie(name, value, days) {
+    let expires = "";
+    if (days) {
+        const date = new Date();
+        date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+        expires = "; expires=" + date.toUTCString();
+    }
+    document.cookie = name + "=" + value + expires + "; path=/";
+}
+
+/**
+ * getCookie() 
+ * 
+ * Returns the value of a cookie with the specified name.
+ * 
+ * @param {string} name -   The name of the cookie to retrieve.
+ * @returns {string|null} - The value of the cookie, or null if the cookie 
+ *                          does not exist.
+ */
+function getCookie(name) {
+    const nameEQ = name + "=";
+    const cookies = document.cookie.split(";");
+    for (let i = 0; i < cookies.length; i++) {
+        let cookie = cookies[i];
+        while (cookie.charAt(0) === " ") {
+            cookie = cookie.substring(1, cookie.length);
+        }
+        if (cookie.indexOf(nameEQ) === 0) {
+            return cookie.substring(nameEQ.length, cookie.length);
+        }
+    }
+    return null;
+}
+
+/**
+ * stringToNumber()
+ * 
+ * Takes a string and returns a numeric value based on the sum of its character codes.
+ * 
+ * @param {string} string - The string to be converted to a numeric value.
+ * @returns {number} - The numeric value of the input string.
+ */
+function stringToNumber(string) {
+    let sum = 0;
+    for (let i = 0; i < string.length; i++) {
+        sum += string.charCodeAt(i) - 64; // A=65, so subtract 64 to get 1 for A, 2 for B, etc.
+    }
+    return sum;
+}
+
+/**
+ * Modal Helper
+ * @param {*} title 
+ * @param {*} body
+ * @param {*} footerElems a list of elements to include in the footer
+ */
+function modal(title, body, footerElems = []) {
+    // create modal container
+    const modalContainer = createElement("div", {
+        class: "modal fade",
+        tabindex: "-1",
+        role: "dialog",
+    });
+
+    // create modal dialog
+    const modalDialog = createElement("div", {
+        class: "modal-dialog modal-dialog-centered",
+        role: "document",
+    });
+
+    // create modal content
+    const modalContent = createElement("div", { class: "modal-content" });
+
+    // create modal header
+    const modalHeader = createElement("div", { class: "modal-header" }, [
+        createElement("h5", { class: "modal-title" }, [], title),
+        createElement("button", { type: "button", class: "btn-close", "data-bs-dismiss": "modal", "aria-label": "Close", }, []),
+    ]);
+
+    // create modal body
+    const modalBody = createElement("div", { class: "modal-body" }, [], body);
+
+
+    const modalFooterElems = [
+        createElement("button", { type: "button", class: "btn btn-secondary", "data-bs-dismiss": "modal", }, [], i18n[userLanguage].close),
+        ...footerElems
+    ]
+
+    // create modal footer
+    const modalFooter = createElement("div", { class: "modal-footer" }, modalFooterElems);
+
+    // add header, body, and footer to content
+    modalContent.appendChild(modalHeader);
+    modalContent.appendChild(modalBody);
+    modalContent.appendChild(modalFooter);
+
+    // add content to dialog
+    modalDialog.appendChild(modalContent);
+
+    // add dialog to container
+    modalContainer.appendChild(modalDialog);
+
+    // remove from DOM if fully closed
+    modalContainer.addEventListener('hidden.bs.modal', () => {
+        modalContainer.remove();
+    });
+
+    // show modal
+    const modalInstance = new bootstrap.Modal(modalContainer);
+    modalInstance.show();
+}
+
+/**
+ * Legacy Helper Functions
+ */
+// Helper validation functions
+
+function safeTag(string) {
+    return string.replace(/[^a-zA-Z0-9 +\-=._:/@]/g, '').substr(0, 255);
+}
+
+function localDatetime() {
+    var date = new Date();
+    return date.getFullYear() + '-' +
+        ('00' + (date.getMonth() + 1)).slice(-2) + '-' +
+        ('00' + date.getDate()).slice(-2) + ' ' +
+        ('00' + date.getHours()).slice(-2) + ':' +
+        ('00' + date.getMinutes()).slice(-2) + ':' +
+        ('00' + date.getSeconds()).slice(-2);
+}
+
+function displayMessage(message, type, index) {
+    index = index || 1;
+    var element = document.getElementById('message' + index);
+    element.innerHTML = message;
+    element.className = type;
+}
+
+function clearMessage() {
+    $('[id^="message"]').addClass('d-none').html('');
+}
+
+function loadMember(member) {
+    const claimFields = member.claim_fields || [];
+    const claimTransactions = member.claim_transactions || [];
+    const claimFiles = member.claim_files || [];
+
+    for (const field of claimFields) {
+        let input = document.querySelector(`[data-label="${field.name}"]`); // RH - case radio would fail since this was a const
+        if (!input) continue;
+
+        switch (input.type) {
+            case 'text':
+            case 'tel':
+            case 'email':
+            case 'number':
+            case 'date':
+            case 'select-one':
+            case 'hidden':
+                input.value = field.value;
+                break;
+            case 'textarea':
+                input.innerText = field.value;
+                break;
+            case 'checkbox':
+                input.checked = field.value.toUpperCase() === 'YES';
+                break;
+            case 'radio':
+                input = document.querySelector(`[data-label="${field.name}"][value="${field.value}"]`);
+                if (input) input.checked = true;
+                break;
+        }
+    }
+
+    for (const transaction of claimTransactions) {
+
+        if (transaction.item_id > 1) {
+            const child = document.querySelector(`[data-label="${transaction.name}"]`);
+            const parent = child.closest("table");
+            const parentID = parent.id.split("_")[1];
+            document.getElementById("add_transactions_" + parentID).click();
+        }
+
+        let input = document.querySelector(`[data-label="${transaction.name}"][item-id="${transaction.item_id}"]`); // RH - changed to let since const would fail for case `radio`
+        if (!input) continue;
+
+        switch (input.type) {
+            case 'text':
+            case 'date': 
+            case 'tel':
+            case 'email':
+            case 'number':
+            case 'select-one':
+            case 'hidden':
+                input.value = transaction.value;
+                break;
+            case 'textarea':
+                input.innerText = transaction.value;
+                break;
+            case 'checkbox':
+                input.checked = transaction.value.toUpperCase() === 'YES';
+                break;
+            case 'radio':
+                input = document.querySelector(`[data-label="${transaction.name}"][value="${transaction.value}"][item-id="${transaction.item_id}"]`);
+                if (input) input.checked = true;
+                break;
+        }
+    }
+
+    if (claimFiles.length > 0) {
+        const list = document.getElementById('file-list');
+        list.classList.remove('d-none');
+        document.getElementById('no-files').classList.add('d-none');
+
+        for (const file of claimFiles) {
+            const li = document.createElement('li');
+            li.setAttribute('disabled', 'disabled');
+            li.innerHTML = `<span class="float-right badge ${file.failed ? 'bg-danger' : 'bg-success'}">${file.failed ? 'FAILED' : 'Uploaded'}</span><span class="filename"><strong>${file.name}</strong></span><span class="description">(${file.description})</span>`;
+            list.appendChild(li);
+        }
+    }
+
+    // Commented out, preventing populating claim member details.
+    // if (member.signature) return;
+
+    for (const key in member) {
+        if (!member.hasOwnProperty(key)) continue;
+
+        const field = document.getElementById(key);
+        if (!field) continue;
+
+        field.value = member[key];
+    }
+
+    const country = document.getElementById('country');
+    if (country.value === '') country.value = 'USA';
+    if (country.value !== 'USA') {
+        document.querySelectorAll('#state,#zip_code').forEach((input) => {
+            toggleFieldAttribute(input, 'required', false);
+            input.parentNode.classList.add('d-none');
+        });
+        document.querySelectorAll('#province,#postal_code').forEach((input) => {
+            toggleFieldAttribute(input, 'required', true);
+            input.parentNode.classList.remove('d-none');
+        });
+        toggleForeignPhone(true);
+    }
+
+    if (member.claim_id) $('#confirm_email_address').val($('#email_address').val());
+
+    if (typeof customLoadMember === 'function') customLoadMember(member);
+}
+
+function toggleFieldError(field, toggle, message) {
+    var label, span;
+
+    if (field.hasAttribute('data-custom-error') && typeof customToggleFieldError === 'function') {
+        customToggleFieldError(field, toggle, message);
+    } else {
+        label = document.querySelector('label[for=' + field.id + ']');
+        span = label.querySelector('span.error');
+        field.classList[toggle ? 'add' : 'remove']('error');
+        label.classList[toggle ? 'add' : 'remove']('error');
+        span.innerHTML = toggle ? message : '';
+    }
+}
+
+function toggleFieldWarning(field, toggle, message) {
+    var label, span;
+
+    if (field.hasAttribute('data-custom-warning') && typeof customToggleFieldWarning === 'function') {
+        customToggleFieldWarning(field, toggle, message);
+    } else {
+        label = document.querySelector('label[for=' + field.id + ']');
+        span = label.querySelector('span.warning');
+        field.classList[toggle ? 'add' : 'remove']('warning');
+        label.classList[toggle ? 'add' : 'remove']('warning');
+        span.innerHTML = toggle ? message : '';
+    }
+}
+
+// add or remove given attribute from field validation
+function toggleFieldAttribute(field, attribute, toggle) {
+    var validation = field.getAttribute('data-validate').split(' ');
+
+    if (toggle) {
+        if (validation.indexOf(attribute) == -1) {
+            validation.push(attribute);
+        }
+    } else {
+        var index = validation.indexOf(attribute);
+        if (index != -1) {
+            validation.splice(index, 1);
+        }
+    }
+
+    field.setAttribute('data-validate', validation.join(' '));
+}
+
+function toggleForeignPhone(toggle) {
+    if (toggle) {
+        $('[type="tel"]').off('keyup', formatPhone);
+    } else {
+        $('[type="tel"]').on('keyup', formatPhone);
+    }
+    $('[type="tel"]').each(function (index, input) {
+        toggleFieldAttribute(input, 'phone', !toggle);
+    });
+}
+
+function ConfirmEmailAddress(params, claim) {
+    let email_address = document.getElementById('email_address');
+    let confirm_email_address = document.getElementById('confirm_email_address');
+    switch (params) {
+        case 'init':
+            $('#email_address,#confirm_email_address').on('change', function () {
+                if (confirm_email_address.value != '' && email_address.value.toLowerCase() !== confirm_email_address.value.toLowerCase()) {
+                    toggleFieldError(confirm_email_address, true, 'Does Not Match');
+                } else {
+                    toggleFieldError(confirm_email_address, false);
+                }
+            });
+            break;
+
+        case 'process':
+            if (claim.data.contact.email_address && confirm_email_address.value.toLowerCase() !== claim.data.contact.email_address.toLowerCase()) {
+                toggleFieldError(confirm_email_address, true, 'Does Not Match');
+                claim.flags.valid = false;
+            } else {
+                toggleFieldError(confirm_email_address, false);
+            }
+            break;
+    }
+}
+
+function validateField(e) {
+    var field = (e instanceof Event) ? e.target : e;
+
+    if (!field.hasAttribute('data-validate')) {
+        return;
+    }
+
+    var validation = field.getAttribute('data-validate').split(' ');
+
+    // File input element values can't be changed (except to empty string)
+    if (field.type != 'file') {
+        field.value = field.value.trim();
+    }
+
+    if (field.hasAttribute('data-custom-validate') && typeof customValidateField === 'function') {
+        return customValidateField(field, validation);
+    }
+
+    toggleFieldError(field, false);
+
+    if (validation.includes('required') && !validRequire(field)) {
+        toggleFieldError(field, true, i18n[userLanguage].required);
+        return false;
+    }
+
+    if (field.value) {
+        if (validation.includes('integer') && !validInteger(field)) {
+            toggleFieldError(field, true, 'Invalid');
+            return false;
+        }
+
+        if (validation.includes('float') && !validFloat(field)) {
+            toggleFieldError(field, true, 'Invalid');
+            return false;
+        }
+
+        if (validation.includes('price') && !validPrice(field)) {
+            toggleFieldError(field, true, 'Invalid');
+            return false;
+        }
+
+        if (validation.includes('email') && !validEmail(field)) {
+            toggleFieldError(field, true, 'Invalid');
+            return false;
+        }
+
+        if (validation.includes('url') && !validURL(field)) {
+            toggleFieldError(field, true, 'Invalid');
+            return false;
+        }
+
+        if (validation.includes('min-length') && !validMinLength(field)) {
+            toggleFieldError(field, true, 'Min Length: ' + field.getAttribute('data-min-length'));
+            return false;
+        }
+
+        if (validation.includes('max-length') && !validMaxLength(field)) {
+            toggleFieldError(field, true, 'Max Length: ' + field.getAttribute('data-max-length'));
+            return false;
+        }
+
+        if (validation.includes('zip-code') && !validZipCode(field)) {
+            toggleFieldError(field, true, 'Invalid');
+            return false;
+        }
+
+        if (validation.includes('phone') && !validPhone(field)) {
+            toggleFieldError(field, true, 'Invalid');
+            return false;
+        }
+
+        if (validation.includes('file-type') && !validFileType(field)) {
+            toggleFieldError(field, true, 'Invalid File Type');
+            return false;
+        }
+
+        if (validation.includes('file-size') && !validFileSize(field)) {
+            toggleFieldError(field, true, 'Max File Size: ' + (field.getAttribute('data-file-size') / 1048576) + ' Mb');
+            return false;
+        }
+
+        if (validation.includes('date') && !validDate(field)) {
+            toggleFieldError(field, true, 'Invalid');
+            return false;
+        }
+
+        if (validation.includes('date-min') && !validMinDate(field)) {
+            toggleFieldError(field, true, `Minimum date is ${formatDate(field.getAttribute('data-date-min'))}`);
+            return false;
+        }
+
+        if (validation.includes('date-max') && !validMaxDate(field)) {
+            toggleFieldError(field, true, `Maximum date is ${formatDate(field.getAttribute('data-date-max'))}`);
+            return false;
+        }
+
+        if (validation.includes('greater-than') && !validGreaterThan(field)) {
+            toggleFieldError(field, true, 'Invalid');//'Greater Than: '+field.getAttribute('data-greater-than'));
+            return false;
+        }
+
+        if (validation.includes('less-than') && !validLessThan(field)) {
+            toggleFieldError(field, true, 'Invalid');//'Less Than: '+field.getAttribute('data-less-than'));
+            return false;
+        }
+
+        if (validation.includes('regex') && !validRegex(field)) {
+            toggleFieldError(field, true, 'Invalid');
+            return false;
+        }
+    }
+
+    return true;
+}
+
+function validRequire(field) {
+    if (field.type == 'radio') {
+        return !!document.querySelector('input[name="' + field.name + '"]:checked');
+    }
+
+    if (field.type == 'checkbox') {
+        return field.checked;
+    }
+
+    return (field.value === '') ? false : true;
+}
+
+function validFileSize(field) {
+    return (field.files[0].size < parseInt(field.getAttribute('data-file-size')));
+}
+
+function validFileType(field) {
+    var allowed = field.getAttribute('data-file-type').split(',');
+    return allowed.includes(field.files[0].type);
+}
+
+function validURL(field) {
+    var url = /^(?:(?:(?:https?):)\/\/)(?:\S+(?::\S*)?@)?(?:(?!(?:10|127)(?:\.\d{1,3}){3})(?!(?:169\.254|192\.168)(?:\.\d{1,3}){2})(?!172\.(?:1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2})(?:[1-9]\d?|1\d\d|2[01]\d|22[0-3])(?:\.(?:1?\d{1,2}|2[0-4]\d|25[0-5])){2}(?:\.(?:[1-9]\d?|1\d\d|2[0-4]\d|25[0-4]))|(?:(?:[a-z\u00a1-\uffff0-9]-*)*[a-z\u00a1-\uffff0-9]+)(?:\.(?:[a-z\u00a1-\uffff0-9]-*)*[a-z\u00a1-\uffff0-9]+)*(?:\.(?:[a-z\u00a1-\uffff]{2,})).?)(?::\d{2,5})?(?:[/?#]\S*)?$/i;
+    if (field.value.indexOf('http://') !== 0 && field.value.indexOf('https') !== 0) {
+        field.value = 'http://' + field.value;
+    }
+    return (url.test(field.value)) ? true : false;
+}
+
+function validEmail(field) {
+    var email = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+    return (email.test(field.value)) ? true : false;
+}
+
+function validZipCode(field) {
+    var zipcode = /^(\d{5}(-\d{4})?|[A-CEGHJ-NPRSTVXY]\d[A-CEGHJ-NPRSTV-Z] ?\d[A-CEGHJ-NPRSTV-Z]\d)$/;
+    return (zipcode.test(field.value)) ? true : false;
+}
+
+function validPhone(field) {
+    var phone = /^[0-9]{3}-?[0-9]{3}-?[0-9]{4}$/;
+    return (phone.test(field.value)) ? true : false;
+}
+
+function validInteger(el) {
+    var int = /^\d+$/;
+    return (int.test(el.value)) ? true : false;
+}
+
+function validFloat(field) {
+    return (!isNaN(parseFloat(field.value)) && isFinite(field.value)) ? true : false;
+}
+
+function validPrice(field) {
+    var price = /^[0-9]\d*(((,\d{3}){1})?(\.\d{0,2})?)$/;
+    return (price.test(field.value)) ? true : false;
+}
+
+function validMinLength(field) {
+    return (field.value.length >= parseInt(field.getAttribute('data-min-length')));
+}
+
+function validMaxLength(field) {
+    return (field.value.length <= parseInt(field.getAttribute('data-max-length')));
+}
+
+function validGreaterThan(field) {
+    return (parseFloat(field.value) > parseFloat(field.getAttribute('data-greater-than')));
+}
+
+function validLessThan(field) {
+    return (parseFloat(field.value) < parseFloat(field.getAttribute('data-less-than')));
+}
+
+function validDate(field) {
+    var date = field.value;
+    var valid = true;
+
+    if (new Date(date) == 'Invalid Date') {
+        console.log('invalid');
+        valid = false;
+    }
+
+    return valid;
+}
+
+function validMinDate(field) {
+    var day, month, year;
+    var min_day, min_month, min_year;
+    var date = field.value.split('-');
+    var min = field.getAttribute('data-date-min').split('-');
+    var format = field.getAttribute('data-date-format') || 'YYYY-MM-DD';
+
+    if (format == 'YYYY-MM-DD') {
+        year = date[0];
+        month = date[1];
+        day = date[2];
+
+        min_year = min[0];
+        min_month = min[1];
+        min_day = min[2];
+    }
+
+    return (Date.UTC(year, month, day) >= Date.UTC(min_year, min_month, min_day));
+}
+
+function validMaxDate(field) {
+    var day, month, year;
+    var max_day, max_month, max_year;
+    var date = field.value.split('-');
+    var max = field.getAttribute('data-date-max').split('-');
+    var format = field.getAttribute('data-date-format') || 'YYYY-MM-DD';
+
+    if (format == 'YYYY-MM-DD') {
+        year = date[0];
+        month = date[1];
+        day = date[2];
+
+        max_year = max[0];
+        max_month = max[1];
+        max_day = max[2];
+    }
+
+    return (Date.UTC(year, month, day) <= Date.UTC(max_year, max_month, max_day));
+}
+
+function validRegex(field) {
+    var regex = new RegExp(field.getAttribute('data-regex'));
+    return regex.test(field.value) ? true : false;
+}
+
+function formatPhone() {
+    var input = this.value;
+    var size = input.length;
+
+    input = input.replace(/\D/g, '');
+    input = input.substring(0, 10);
+
+    if (size == 0) {
+        input = input;
+    } else if (size < 4) {
+        input = input;
+    } else if (size <= 7) {
+        input = input.substring(0, 3) + '-' + input.substring(3, 6);
+    } else {
+        input = input.substring(0, 3) + '-' + input.substring(3, 6) + '-' + input.substring(6, 10);
+    }
+
+    this.value = input;
+}
+
+function formatSSN() {
+    var input = this.value;
+    var size = input.length;
+
+    input = input.replace(/\D/g, '');
+    input = input.substring(0, 10);
+
+    if (size == 0) {
+        input = input;
+    } else if (size < 4) {
+        input = input;
+    } else if (size <= 6) {
+        input = input.substring(0, 3) + '-' + input.substring(3, 5);
+    } else {
+        input = input.substring(0, 3) + '-' + input.substring(3, 5) + '-' + input.substring(5, 9);
+    }
+
+    this.value = input;
+}
+
+function formatEIN() {
+    var input = this.value;
+    var size = input.length;
+
+    input = input.replace(/\D/g, '');
+    input = input.substring(0, 10);
+
+    if (size == 0) {
+        input = input;
+    } else if (size < 3) {
+        input = input;
+    } else {
+        input = input.substring(0, 2) + '-' + input.substring(2, 9);
+    }
+
+    this.value = input;
+}
+
+function addDatePicker(date) {
+    var min, max, start;
+    if (date.hasAttribute('data-date-min')) {
+        min = new Date(date.getAttribute('data-date-min'));
+    }
+    if (date.hasAttribute('data-date-max')) {
+        max = new Date(date.getAttribute('data-date-max'));
+    }
+    if (date.hasAttribute('data-date-default')) {
+        start = new Date(date.getAttribute('data-date-default'));
+    }
+
+    date.setAttribute('autocomplete', 'off');
+
+    new Pikaday({
+        field: date,
+        format: date.getAttribute('data-date-format') || 'MM/DD/YYYY',
+        minDate: min,
+        maxDate: max,
+        defaultDate: start,
+        toString: function (date, format) {
+            var day = date.getDate();
+            var month = date.getMonth() + 1;
+            var year = date.getFullYear();
+            if (day < 10) { day = '0' + day; }
+            if (month < 10) { month = '0' + month; }
+            if (format == 'MM/DD/YYYY') {
+                return month + '/' + day + '/' + year;
+            } else if (format == 'MM/YYYY') {
+                return month + '/' + year;
+            }
+        },
+    });
+}
+
+function formatDate(date) {
+    let parts = date.split('-');
+    return `${parts[1]}/${parts[2]}/${parts[0]}`;
+}
+
+
+/**
+ * makeStandardContactPage()
+ *
+ * Creates the contact page using the standard template logic
+ *
+ * @param {class} Page -   Instantiated Page class (should be passed using `this`)
+ * @param {Object} page - dictionary object for the page being rendered from CMS
+ * @returns {null} - Does not return a value
+ */
+
+function makeStandardContactPage(Page, page, userLanguage) {
+    const PageTitle = createElement("h2", { id: "PageTitle" }, [page.PageTitle]);
+    const Separator = createElement("hr");
+
+    const showFaqsForm = createElement("button", {
+        class: "btn btn-primary mt-3",
+        id: "adminEmail",
+        // onclick: "showContactFAQForm()"
+    }, [], i18n[userLanguage].contact_admin);
+
+    const adminData = page.PageContent[0];
+    const Admin = createElement("address", { class: "mb-5" }, [
+        createElement("span", { class: "fw-bold d-block", id: "adminTitle" }, [], adminData.AdminTitle),
+        createElement("span", { class: "d-block", id: "adminName", }, [], adminData.AdminName),
+        createElement("span", { class: "d-inline-block", id: "adminAddress1" }, [], adminData.AdminAddress1),
+        adminData.AdminAddress2 ? createElement("span", { id: "adminAddress2" }, [], ', ' + adminData.AdminAddress2) : ``,
+        createElement("br"),
+        createElement("span", { class: "d-inline-block", id: "adminCity" }, [], adminData.AdminCity),
+        createElement("span", { class: "d-inline-block pe-1", id: "adminState" }, [], ', ' + adminData.AdminState),
+        createElement("span", { id: "adminZipCode" }, [], adminData.AdminZipCode),
+        createElement("span", { class: "mt-3 d-block", id: "adminPhone" }, [], `<strong>${i18n[userLanguage].admin_phone}</strong> <a href="tel:+${siteInfo.phone}">${siteInfo.phone}</a>`),
+        //createElement("span", { class: "d-block", id: "adminEmail" }, [], `<strong>${i18n[userLanguage].admin_email}:</strong> <a href="mailto:${siteInfo.email_info}">${siteInfo.email_info}</a>`)
+        showFaqsForm,
+    ]);
+
+    showFaqsForm.addEventListener("click", () => {
+        showContactFAQForm(userLanguage);
+    });
+
+    const Address = createElement("div", { class: "col-md-8" }, [Admin]);
+    const Aside = createElement("div", { class: "col-md-4" }, [], Page.dates.card().outerHTML);
+    const Row = createElement("div", { class: "row" }, [Address, Aside]);
+
+    const pageElement = createElement("div", { class: "page" }, [PageTitle, Separator, Row]);
+    outputDiv.appendChild(pageElement);
+}
+
+/**
+ * toTitleCase()
+ *
+ * Converts a string to title case, capitalizing the first letter of each word.
+ *
+ * @param {string} str - The input string to be converted to title case.
+ * @returns {string} The converted string in title case.
+ * @example
+ * const text = "this is a sample text";
+ * const titleCaseText = toTitleCase(text);
+ * console.log(titleCaseText); // "This Is A Sample Text"
+ */
+
+function toTitleCase(str) {
+    return str
+        .toLowerCase()
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+}
+
+const submitContactButton = (userLanguage) => {
+    return createElement("button", {
+        type: "button",
+        class: "btn btn-primary",
+        id: "submitContactFormBtn",
+        onclick: "submitContactForm()",
+        disabled: true
+    }, [], i18n[userLanguage].submit_btn)
+};
+
+const messageBox = (userLanguage) => {
+    return createElement("form", { id: "contactForm", class: "collapse", method: "post" }, [
+        createElement("div", { class: "form-group" }, [
+            createElement("label", { for: "email_address" }, [], i18n[userLanguage].email_address),
+            createElement("input", { type: "text", class: "form-control", id: "email_address", required: true }),
+        ]),
+        createElement("div", { class: "form-group" }, [
+            createElement("label", { for: "first_name" }, [], i18n[userLanguage].first_name),
+            createElement("input", { type: "text", class: "form-control", id: "first_name", required: true }),
+        ]),
+        createElement("div", { class: "form-group" }, [
+            createElement("label", { for: "last_name" }, [], i18n[userLanguage].last_name),
+            createElement("input", { type: "text", class: "form-control", id: "last_name", required: true }),
+        ]),
+        createElement("div", { class: "form-group" }, [
+            createElement("label", { for: "phone_number_1" }, [], i18n[userLanguage].phone_number_1),
+            createElement("input", { type: "text", class: "form-control", id: "phone_number_1", required: true }),
+        ]),
+        createElement("div", { class: "form-group" }, [
+            createElement("label", { for: "reason" }, [], i18n[userLanguage].reason),
+            createElement("select", { class: "form-select", id: "reason", required: true }, [
+                createElement("option", { value: "" }, [], i18n[userLanguage].reason_select),
+                createElement("option", { value: i18n[userLanguage].contact_us_select_dropdown.claim_form }, [], i18n[userLanguage].contact_us_select_dropdown.claim_form),
+                createElement("option", { value: i18n[userLanguage].contact_us_select_dropdown.exclusion }, [], i18n[userLanguage].contact_us_select_dropdown.exclusion),
+                createElement("option", { value: i18n[userLanguage].contact_us_select_dropdown.general_qa }, [], i18n[userLanguage].contact_us_select_dropdown.general_qa),
+                createElement("option", { value: i18n[userLanguage].contact_us_select_dropdown.contact_info_update }, [], i18n[userLanguage].contact_us_select_dropdown.contact_info_update),
+                createElement("option", { value: i18n[userLanguage].contact_us_select_dropdown.status }, [], i18n[userLanguage].contact_us_select_dropdown.status),
+                createElement("option", { value: i18n[userLanguage].contact_us_select_dropdown.payment }, [], i18n[userLanguage].contact_us_select_dropdown.payment),
+                createElement("option", { value: i18n[userLanguage].contact_us_select_dropdown.notice_related }, [], i18n[userLanguage].contact_us_select_dropdown.notice_related),
+                createElement("option", { value: i18n[userLanguage].contact_us_select_dropdown.other }, [], i18n[userLanguage].contact_us_select_dropdown.other),
+            ]),
+        ]),
+        createElement("div", { class: "form-group" }, [
+            createElement("label", { for: "message" }, [], i18n[userLanguage].message),
+            createElement("textarea", { class: "form-control", id: "message", rows: 3, required: true }),
+        ]),
+    ]);
+}
+
+
+function showContactFAQForm(userLanguage, page) {
+    setContactFAQPage()
+    const firstDropDown = faqContactForm.makeFirstContactDropDown()
+    const faqContainer = createElement("div", { id: "faq-category-select" }, [], firstDropDown.outerHTML)
+    let messageBoxHTML = faqContainer.outerHTML + messageBox(userLanguage).outerHTML
+    modal(i18n[userLanguage].contact_us, messageBoxHTML, [submitContactButton(userLanguage)])
+    const submitBtn = document.getElementById("submitContactFormBtn")
+    if (submitBtn) {
+        submitBtn.disabled = true
+    }
+}
+
+function toggleContactForm() {
+    const contactForm = document.getElementById("contactForm")
+    const faqSelect = document.getElementById("faq-category-select")
+    if (contactForm.classList.contains("collapse")) {
+        contactForm.classList.remove("collapse")
+        contactForm.classList.add("show")
+        faqSelect.remove()
+        document.getElementById("submitContactFormBtn").disabled = false
+    } else {
+        contactForm.classList.remove("show")
+        contactForm.classList.add("collapse")
+    }
+}
+
+function submitContactForm() {
+    const formClaim = new Claim()
+    const api = apigClientFactory.newClient(formClaim.config);
+    const reason = document.getElementById('reason').value;
+    const message = document.getElementById('message').value;
+    const first_name = document.getElementById('first_name').value;
+    const last_name = document.getElementById('last_name').value;
+    const email_address = document.getElementById('email_address').value;
+    const phone_number_1 = document.getElementById('phone_number_1').value;
+    const form_elements = [reason, message, first_name, last_name, email_address, phone_number_1];
+
+    function toggleSubmitBtn() {
+        let submitBtn = $('#submitContactFormBtn');
+        if (submitBtn.prop('disabled')) {
+            submitBtn.prop('disabled', false);
+            submitBtn.html(i18n[userLanguage].submit_btn);
+        } else {
+            submitBtn.prop('disabled', true);
+            submitBtn.html(`<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> ${i18n[userLanguage].submitting}`);
+
+        }
+    }
+
+    toggleSubmitBtn()
+
+    // check to make sure these are all set
+    if (form_elements.some(element => !element)) {
+        alert(i18n[userLanguage].contact_us_fill_required_fields);
+        toggleSubmitBtn()
+        return;
+    }
+    try {
+        grecaptcha.enterprise.execute(reCAPTCHAv3, { action: 'submit' }).then((token) => {
+            let ticket = {};
+            ticket.token = token;
+            ticket.domain = formClaim.hostname();
+            ticket.subject = reason;
+            ticket.contact = {
+                reason: reason,
+                message: message,
+                first_name: first_name,
+                last_name: last_name,
+                email_address: email_address,
+                phone_number_1: phone_number_1
+            };
+
+            api['zendeskTicketPost']({}, ticket).then(async function (result) {
+                // Check for error message
+                if (result.data.error) {
+                    console.log(result.data.error);
+                    alert(result.data.error)
+                    toggleSubmitBtn()
+                    return;
+                }
+
+                toggleSubmitBtn()
+                // alert(i18n[userLanguage].contact_us_success);
+                $('.modal-backdrop').remove();
+                $('.modal').remove();
+
+                modal(i18n[userLanguage].message, i18n[userLanguage].contact_us_success);
+            });
+        });
+    } catch (error) {
+        // Handle error
+        toggleSubmitBtn()
+        console.error('An error occurred while sending your message:', error);
+        alert(i18n[userLanguage].contact_us_error_while_sending);
+    }
+}
+
+
+function filterFaq(Elem) {
+    const secondContactDropDownElem = document.getElementById('contactTopic')
+    if (secondContactDropDownElem) {
+        secondContactDropDownElem.remove()
+    }
+    if (Elem.value === "") {
+        toggleContactForm()
+        return;
+    }
+    const secondLevelOptions = faqContactForm.faq[Elem.value]
+    const secondLevelOptionsKeys = Object.keys(secondLevelOptions)
+    const secondContactDropDown = createElement("div", { class: "form-group" }, [
+        createElement("label", { for: "contactTopic" }, [], i18n[userLanguage].topic),
+        createElement("select", { class: "form-select", id: "contactTopic", required: true, onchange: `displayFaqAnswer("${Elem.value}", this)` }, [
+            createElement("option", { value: "" }, [], i18n[userLanguage].contact_us_select_a_reason),
+            ...secondLevelOptionsKeys.map(category => createElement("option", { value: category }, [], category)),
+            createElement("option", { value: "" }, [], i18n[userLanguage].contact_us_select_other),
+        ]),
+    ]);
+    Elem.parentElement.parentElement.appendChild(secondContactDropDown)
+}
+
+function displayFaqAnswer(sectionKey, Elem) {
+    const faqAnswerElem = document.getElementById('faqAnswer')
+    if (faqAnswerElem) {
+        faqAnswerElem.remove()
+    }
+
+    const faqConfirmElem = document.getElementById('faqConfirm')
+    if (faqConfirmElem) {
+        faqConfirmElem.remove()
+    }
+    if (Elem.value === "") {
+        toggleContactForm();
+        return;
+    }
+    const answerHTML = faqContactForm.faq[sectionKey][Elem.value]
+    const faqAnswer = createElement("div", { class: "form-group", id: "faqAnswer" }, [
+        createElement("label", { for: "faqAnswer" }, [], i18n[userLanguage].contact_us_rel_faqs),
+        createElement("div", { class: "form-control", id: "faqAnswer" }, [], answerHTML),
+    ]);
+
+    const faqConfirm = createElement("div", { class: "form-group", id: "faqConfirm" }, [
+        createElement("label", { for: "faqConfirm" }, [], i18n[userLanguage].contact_us_confirm),
+        createElement("div", { class: "form-check" }, [
+            createElement("input", { class: "form-check-input", type: "radio", name: "faqConfirm", id: "faqConfirmYes", value: "Yes", checked: true }, []),
+            createElement("label", { class: "form-check-label", for: "faqConfirmYes" }, [], i18n[userLanguage].yes),
+        ]),
+        createElement("div", { class: "form-check" }, [
+            createElement("input", { class: "form-check-input", type: "radio", name: "faqConfirm", id: "faqConfirmNo", value: "No", onchange: "toggleContactForm()" }, []),
+            createElement("label", { class: "form-check-label", for: "faqConfirmNo" }, [], i18n[userLanguage].no),
+        ]),
+    ]);
+
+    Elem.parentElement.parentElement.appendChild(faqAnswer)
+    Elem.parentElement.parentElement.appendChild(faqConfirm)
+}
+
+
+function setContactFAQPage() {
+    faqContactForm = new FaqContactForm()
+    faqContactForm.init()
+};
