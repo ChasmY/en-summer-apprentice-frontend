@@ -47,8 +47,24 @@ async function getAllOrders(){
   }
 
 
+let orderHeader = `
+<h3 class="page-title">Purchased tickets</h3>
+<div class="order-header">
+  <span>Id</span>
+  <span>Name</span>
+  <span>Ticket Category</span>
+  <span>Number of Tickets</span>
+  <span>Total Price</span>
+  <span>Event</span>
+  <span>Ordered At</span>
+</div>`
+
+
+
   async function displayOrders() {
     const container = document.querySelector('.order-container');
+    container.innerHTML += orderHeader
+    
     
     try {
       const orders = await getAllOrders();
@@ -62,11 +78,13 @@ async function getAllOrders(){
     }
   }
 
+
 function createOrderElement(element){
     const newCard = document.createElement('div');
     newCard.classList.add('order-card') 
     newCard.setAttribute("data-order-id", element.orderId)
 
+    console.log(newCard)
     let secondCategory = ""
     if(element.ticketCategory.description == "Standard"){
         secondCategory = "Vip"
@@ -74,7 +92,7 @@ function createOrderElement(element){
     else{
         secondCategory = "Standard"
     }
-  
+    
     const ticketSet = `
         <select id="ticketSelector" name="ticketSelector" disabled>
         <option value="${element.ticketCategory.description}">${element.ticketCategory.description}</option>
@@ -82,16 +100,7 @@ function createOrderElement(element){
         </select>
     `
 const content = `
-  <div class="order-container">
-    <div class="order-header">
-      <span>Order Id</span>
-      <span>Name</span>
-      <span>Ticket Category</span>
-      <span>Number of Tickets</span>
-      <span>Total Price</span>
-      <span>Event</span>
-      <span>Ordered At</span>
-    </div>
+  <div class="orderContainer bg-red-500 p-7 m-7">
     <div class="order-data">
       <span>${element.orderId}</span>
       <span>${element.customer.name}</span>
@@ -100,14 +109,13 @@ const content = `
       <span class="total-price">${element.totalPrice}</span>
       <span>${element.eventName}</span>
       <span class="order-date">${element.orderedAt}</span>
-      <div class="action-buttons">
+    </div>
+    <div class="action-buttons">
         <button id="cancelButton" class="hidden"><i class="fa-solid fa-x"></i></button>
         <button id="saveButton" class="hidden"><i class="fa-solid fa-floppy-disk"></i></button>
-    </div>
+      </div>  
   </div>
 `;
-
-  
     newCard.innerHTML = content + `
       ${modifyButton}
       ${deleteButton}
